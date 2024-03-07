@@ -10,7 +10,7 @@
 # See /LICENSE for more information.
 #
 
-name: OpenWrt Builder xray 1.88
+name: OpenWrt Builder j1 
 
 on:
   repository_dispatch:
