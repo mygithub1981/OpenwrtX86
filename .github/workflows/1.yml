@@ -10,7 +10,8 @@
 # See /LICENSE for more information.
 #
 
-name: OpenWrt Builder j1 
+name: OpenWrt Builder mosdns2
+
 
 on:
   repository_dispatch:
@@ -64,6 +65,14 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
+    - name: change mosdns
+      run: |
+        cd openwrt
+        find ./ | grep Makefile | grep v2ray-geodata | xargs rm -f
+        find ./ | grep Makefile | grep mosdns | xargs rm -f
+        git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
+        git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
+
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
@@ -98,7 +107,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j1 V=s
+        make -j$(nproc) || make -j1 || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
