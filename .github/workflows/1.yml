@@ -10,7 +10,7 @@
 # See /LICENSE for more information.
 #
 
-name: OpenWrt Builder mosdns2
+name: OpenWrt Builder mosdns
 
 
 on:
