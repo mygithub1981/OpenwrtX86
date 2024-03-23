@@ -12,6 +12,7 @@
 
 name: OpenWrt Builder
 
+
 on:
   repository_dispatch:
   workflow_dispatch:
@@ -78,7 +79,7 @@ jobs:
         echo "=============================================================================="
         df -hT
         echo "=============================================================================="
-    
+
     - name: Checkout
       uses: actions/checkout@main
 
@@ -114,7 +115,7 @@ jobs:
 
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
-      
+
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
