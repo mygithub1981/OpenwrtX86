@@ -122,6 +122,11 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
+    - name: pgyvpn
+      run: |
+        cd openwrt
+        find ./ | grep Makefile | grep pgyvpn | xargs rm -f
+
     - name: Download package
       id: package
       run: |
