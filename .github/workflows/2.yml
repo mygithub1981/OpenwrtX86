@@ -119,9 +119,9 @@ jobs:
         cd openwrt
         find ./ | grep Makefile | grep passwall | xargs rm -f
         find ./ | grep Makefile | grep passwall2 | xargs rm -f
-        git clone https://github.com/xiaorouji/openwrt-passwall-packages
-        git clone https://github.com/xiaorouji/openwrt-passwall
-        git clone https://github.com/xiaorouji/openwrt-passwall2
+        git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
+        git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
+        git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
 
     - name: Load custom configuration
       run: |
