@@ -119,13 +119,16 @@ jobs:
         cd openwrt
         find ./ | grep Makefile | grep passwall | xargs rm -f
         find ./ | grep Makefile | grep passwall2 | xargs rm -f
+        find ./ | grep Makefile | grep phtunnel | xargs rm -f
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
+        rm -rf feeds/luci/applications/luci-app-phtunnel
         rm -rf feeds/packages/net/xray-core
         rm -rf feeds/packages/net/chinadns-ng
         git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
         git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
         git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
+        git clone https://github.com/coolsnowwolf/luci/tree/master/applications/luci-app-phtunnel package/phtunnel
 
     - name: Load custom configuration
       run: |
