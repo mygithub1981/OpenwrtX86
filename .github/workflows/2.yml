@@ -128,7 +128,7 @@ jobs:
         git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
         git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
         git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
-        git clone https://github.com/mygithub1981/phtunnel package/phtunnel
+        git clone https://github.com/mygithub1981/phtunnel feeds/luci/applications
         
     - name: Load custom configuration
       run: |
