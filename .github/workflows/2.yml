@@ -117,9 +117,6 @@ jobs:
     - name: change passwall
       run: |
         cd openwrt
-        find ./ | grep Makefile | grep passwall | xargs rm -f
-        find ./ | grep Makefile | grep passwall2 | xargs rm -f
-        find ./ | grep Makefile | grep phtunnel | xargs rm -f
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
         rm -rf feeds/luci/applications/luci-app-phtunnel
@@ -128,7 +125,7 @@ jobs:
         git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
         git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
         git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
-        git clone https://github.com/mygithub1981/phtunnel feeds/luci/applications
+        git clone https://github.com/mygithub1981/phtunnel feeds/luci/applications/luci-app-phtunnel
         
     - name: Load custom configuration
       run: |
