@@ -128,7 +128,7 @@ jobs:
         git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
         git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
         git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
-        svn export https://github.com/coolsnowwolf/luci/branches/master/applications/luci-app-phtunnel package/phtunnel
+        git archive --format=tar --remote=https://github.com/coolsnowwolf/luci.git master:applications/luci-app-phtunnel | tar x -C package/
 
     - name: Load custom configuration
       run: |
