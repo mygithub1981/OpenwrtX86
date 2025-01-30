@@ -119,13 +119,11 @@ jobs:
         cd openwrt
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
-        rm -rf feeds/luci/applications/luci-app-phtunnel
         rm -rf feeds/packages/net/xray-core
         rm -rf feeds/packages/net/chinadns-ng
         git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
         git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
         git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
-        git clone https://github.com/mygithub1981/phtunnel feeds/luci/applications/luci-app-phtunnel
         
     - name: Load custom configuration
       run: |
