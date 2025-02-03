@@ -10,7 +10,7 @@
 # See /LICENSE for more information.
 #
 
-name: OpenWrt Builder mosdnsnochangedat
+name: onlychange Ddns-go
 
 
 on:
@@ -66,22 +66,20 @@ jobs:
       uses: easimon/maximize-build-space@master
       with: 
         root-reserve-mb: 2048
-        swap-size-mb: 1
+        swap-size-mb: 1024
         remove-dotnet: 'true'
         remove-android: 'true'
         remove-haskell: 'true'
         remove-codeql: 'true'
         remove-docker-images: 'true'
 
-    - name: Free up disk space complete
-      run: |
-        echo "Free up disk space complete"
-        echo "=============================================================================="
-        df -hT
-        echo "=============================================================================="
-
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v3
+
+    - name: Build
+      run: |
+        echo "Free space:"
+        df -h
 
     - name: Initialization environment
       env:
@@ -116,20 +114,13 @@ jobs:
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
 
-    - name: change golang
+    - name: change passwall
       run: |
         cd openwrt
-        rm -rf feeds/packages/lang/golang
-        git clone https://github.com/sbwml/packages_lang_golang -b 22.x feeds/packages/lang/golang
-
-    - name: change mosdns
-      run: |
-        cd openwrt
-        find ./ | grep Makefile | grep v2ray-geodata | xargs rm -f
-        find ./ | grep Makefile | grep mosdns | xargs rm -f
-        git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
-        git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
-
+        rm -rf feeds/luci/applications/luci-app-ddns-go
+        rm -rf feeds/packages/net/ddns-go
+        git clone https://github.com/sirpdboy/luci-app-ddns-go package/ddns-go
+        
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
