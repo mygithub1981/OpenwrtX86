@@ -1,3 +1,4 @@
+
 #
 # https://github.com/P3TERX/Actions-OpenWrt
 #
@@ -66,22 +67,20 @@ jobs:
       uses: easimon/maximize-build-space@master
       with: 
         root-reserve-mb: 2048
-        swap-size-mb: 1
+        swap-size-mb: 1024
         remove-dotnet: 'true'
         remove-android: 'true'
         remove-haskell: 'true'
         remove-codeql: 'true'
         remove-docker-images: 'true'
 
-    - name: Free up disk space complete
-      run: |
-        echo "Free up disk space complete"
-        echo "=============================================================================="
-        df -hT
-        echo "=============================================================================="
-
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v3
+
+    - name: Build
+      run: |
+        echo "Free space:"
+        df -h
 
     - name: Initialization environment
       env:
@@ -115,7 +114,7 @@ jobs:
 
     - name: Install feeds
       run: cd openwrt && ./scripts/feeds install -a
-
+         
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
