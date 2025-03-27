@@ -124,6 +124,11 @@ jobs:
         rm -rf feeds/packages/net/sing-box
         rm -rf feeds/packages/net/ddns-go
         rm -rf feeds/packages/net/chinadns-ng
+        rm -rf feeds/packages/net/geoview
+        rm -rf feeds/packages/net/v2ray-geodata
+        rm -rf feeds/packages/net/shadowsocks-libev
+        rm -rf feeds/packages/net/microsocks
+        rm -rf feeds/packages/net/dns2socks
         git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
         git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
         git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
