@@ -43,10 +43,10 @@ swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
-        echo "=========================================="
+        echo "========================================="
         echo "清理后的剩余空间："
         df -h
-        echo "=========================================="
+        echo "========================================="
 
     - name: 下载 LEDE 源码
       working-directory: /workdir
