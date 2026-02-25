@@ -69,7 +69,7 @@ jobs:
         # 3. 注入官方最新源码到 package 目录
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
-        git clone --depth 1 https://github.com/Openwrt-Passwall/luci-app-passwall2 package/passwall2-luci
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         
         # 4. 再次安装刷新索引
