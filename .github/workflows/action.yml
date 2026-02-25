@@ -96,14 +96,26 @@ jobs:
         # 运行 defconfig 以应用所有变更
         make defconfig
 
-    - name: SSH 远程配置 (连接后运行 make menuconfig)
+    - name: 强制推送 SSH 连接指令到 Telegram
+      if: github.event.inputs.ssh == 'true'
+      run: |
+        # 即使 tmate 还没完全启动，我们也先发个预警，并在日志里抓取链接
+        MSG="🚀 *SSH 调试模式已开启*
+        项目: ${{ github.repository }}
+        请立刻点击下方链接进入 Actions 日志复制 SSH 运行命令：
+        [点击进入日志界面](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d "parse_mode=Markdown" \
+          -d "text=${MSG}"
+
+    - name: 启动 SSH 远程配置
       uses: P3TERX/ssh2actions@main
       if: github.event.inputs.ssh == 'true'
       env:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-      with:
-        mode: tmate  # 强制使用 tmate
 
     - name: 下载编译资源 (Download)
       run: |
