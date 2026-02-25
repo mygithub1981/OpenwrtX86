@@ -96,6 +96,7 @@ jobs:
         git clone https://github.com/sirpdboy/luci-app-ddns-go package/ddns-go
 
         # 4. 最后安装 feeds
+        ./scripts/feeds install -f -a
         ./scripts/feeds install -a
 
     - name: 加载自定义配置 (.config) & DIY 脚本 (Part 2)
