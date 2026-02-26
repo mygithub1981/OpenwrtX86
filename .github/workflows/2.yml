@@ -47,7 +47,7 @@ jobs:
         echo "=============================================================================="
     
     - name: "Optimize Disk Space"
-      uses: "hugoalh/disk-space-optimizer-ghaction@v0.8.1"
+      uses: "mygithub1981/disk-space-optimizer-ghaction@main"
       with:
         operate_sudo: "True"
         general_include: ".+"
