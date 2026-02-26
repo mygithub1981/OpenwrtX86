@@ -47,10 +47,13 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
-        echo "========================================="
-        echo "清理后的剩余空间："
+
+    - name: Free up disk space complete
+      run: |
+        echo "Free up disk space complete"
+        echo "=============================================================================="
         df -hT
-        echo "========================================="
+        echo "=============================================================================="
 
     - name: Checkout
       uses: actions/checkout@v6
