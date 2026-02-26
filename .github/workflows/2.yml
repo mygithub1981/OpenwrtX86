@@ -16,6 +16,11 @@ name: OpenWrt Builder 2
 on:
   repository_dispatch:
   workflow_dispatch:
+     inputs:
+      ssh:
+        description: '是否开启SSH配置固件 (true/false)'
+        required: false
+        default: 'false'
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -46,6 +51,11 @@ jobs:
       with:
         operate_sudo: "True"
         general_include: ".+"
+        general_exclude: |-
+          ^GCC$
+          ^G\+\+$
+          Clang
+          LLVM
         docker_include: ".+"
         docker_prune: "True"
         docker_clean: "True"
@@ -56,19 +66,48 @@ jobs:
         npm_prune: "True"
         npm_clean: "True"
         os_swap: "True"
+
+    - name: Freeing up disk space
+      uses: easimon/maximize-build-space@master
+      with: 
+        root-reserve-mb: 3072
+        swap-size-mb: 1
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
+    - name: Free up disk space complete
+      run: |
+        echo "Free up disk space complete"
+        echo "=============================================================================="
+        df -hT
+        echo "=============================================================================="
+
+    - name: Checkout
+      uses: actions/checkout@v6
     
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-        sudo docker image prune --all --force
-        sudo -E apt-get -qq update
-        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
+        sudo apt update -y
+        sudo apt full-upgrade -y
+        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+        bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext \
+        genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev \
+        libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev \
+        libreadline-dev libssl-dev libtool llvm lrzsz libnsl-dev ninja-build p7zip p7zip-full patch pkgconf \
+        python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
+        swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
         sudo timedatectl set-timezone "$TZ"
         sudo chown $USER:$GROUPS $GITHUB_WORKSPACE
+        echo "========================================="
+        echo "清理后的剩余空间："
+        df -h
+        echo "========================================="
+
 
     - name: Clone source code
       working-directory: ./
@@ -84,31 +123,40 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
-
-    - name: change passwall
+    - name: 运行 Passwall 官方替换逻辑 (方法 2)
       run: |
         cd openwrt
+        # 1. 更新并安装原有 feeds
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        
+        # 2. 移除官方提到的核心库及冲突包
+        rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
         rm -rf feeds/luci/applications/luci-app-ddns-go
-        rm -rf feeds/packages/net/xray-core
-        rm -rf feeds/packages/net/sing-box
         rm -rf feeds/packages/net/ddns-go
-        rm -rf feeds/packages/net/chinadns-ng
-        rm -rf feeds/packages/net/geoview
-        rm -rf feeds/packages/net/v2ray-geodata
-        rm -rf feeds/packages/net/shadowsocks-libev
-        rm -rf feeds/packages/net/microsocks
-        rm -rf feeds/packages/net/dns2socks
-        git clone https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall-packages
-        git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
-        git clone https://github.com/xiaorouji/openwrt-passwall2 package/openwrt-passwall2
-        git clone https://github.com/sirpdboy/luci-app-ddns-go package/ddns-go
+        
+        # 3. 注入官方最新源码到 package 目录
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
+        git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
+        
+        # 4. 再次安装刷新索引
+        ./scripts/feeds install -f -a
+
+    - name: 验证插件来源 (真相大白步骤)
+      run: |
+        cd openwrt
+        echo "=================================================="
+        echo "正在检查 luci-app-passwall 的实际物理路径："
+        # 查找系统中所有名为 luci-app-passwall 的目录
+        find package -name "luci-app-passwall" -type d
+        echo "=================================================="
+        echo "正在检查 xray-core 的来源："
+        find package -name "xray-core" -type d
+        echo "=================================================="
         
     - name: Load custom configuration
       run: |
@@ -117,12 +165,33 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
+        make defconfig
+
+    - name: 强制推送 SSH 连接指令到 Telegram
+      if: github.event.inputs.ssh == 'true'
+      run: |
+        # 即使 tmate 还没完全启动，我们也先发个预警，并在日志里抓取链接
+        MSG="🚀 *SSH 调试模式已开启*
+        项目: ${{ github.repository }}
+        请立刻点击下方链接进入 Actions 日志复制 SSH 运行命令：
+        [点击进入日志界面](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d "parse_mode=Markdown" \
+          -d "text=${MSG}"
+
+    - name: 启动 SSH 远程配置
+      uses: P3TERX/ssh2actions@main
+      if: github.event.inputs.ssh == 'true'
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
 
     - name: Download package
       id: package
       run: |
         cd openwrt
-        make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -157,6 +226,27 @@ jobs:
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: 发送 Telegram 通知
+      if: always()
+      run: |
+        if [[ "${{ steps.compile.outputs.status }}" == "success" ]]; then
+          ICON="✅"
+          STATUS="编译成功"
+        else
+          ICON="❌"
+          STATUS="编译失败"
+        fi
+        MSG="${ICON} *GitHub Actions 编译通知*
+        *项目:* LEDE 固件
+        *状态:* ${STATUS}
+        *时间:* $(date +'%Y-%m-%d %H:%M:%S')
+        *链接:* [点击查看详情](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+          -d "parse_mode=Markdown" \
+          -d "text=${MSG}"
 
     - name: Upload firmware directory
       uses: actions/upload-artifact@main
