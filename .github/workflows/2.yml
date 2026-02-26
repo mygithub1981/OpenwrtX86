@@ -65,8 +65,7 @@ jobs:
         homebrew_clean: "True"
         npm_prune: "True"
         npm_clean: "True"
-        os_swap: "True"
-
+       
     - name: Free up disk space complete
       run: |
         echo "Free up disk space complete"
