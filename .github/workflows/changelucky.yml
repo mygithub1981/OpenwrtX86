@@ -1,4 +1,4 @@
-name: Build LEDE (Standard & Official Method 2)
+name: Build LEDE (all also lucky)
 
 on:
   repository_dispatch:
