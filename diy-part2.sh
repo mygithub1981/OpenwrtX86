@@ -19,4 +19,5 @@
 # Modify hostname
 #sed -i 's/OpenWrt/P3TERX-Router/g' package/base-files/files/bin/config_generate
 # 修改默认 IP 为 192.168.50.250
-sed -i 's/192.168.1.1/192.168.50.250/g' package/base-files/files/bin/config_generate
+# 自动查找 config_generate 文件并修改默认 IP
+find package/base-files/ -name config_generate -exec sed -i 's/192.168.1.1/192.168.50.252/g' {} +
