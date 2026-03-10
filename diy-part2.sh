@@ -22,7 +22,7 @@
 # 自动查找 config_generate 文件并修改默认 IP
 find package/base-files/ -name config_generate -exec sed -i 's/192.168.1.1/192.168.50.252/g' {} +
 #!/bin/bash
-
+echo ">>>>>> DIY-PART2 脚本开始执行 <<<<<<"
 # 1. 全局架构转换：把所有默认的旧版防火墙、iptables、ipset 统统踢出去
 # 使用 sed 的 d 命令直接删除这些行，防止它们通过依赖关系死灰复燃
 sed -i '/CONFIG_DEFAULT_firewall/d' .config
@@ -70,3 +70,9 @@ sed -i 's/CONFIG_PACKAGE_luci-app-ssr-plus=y/# CONFIG_PACKAGE_luci-app-ssr-plus 
 # 6. 最后的保险：确保 dnsmasq-full 编译正确
 sed -i '/CONFIG_PACKAGE_dnsmasq_full_ipset/d' .config
 echo "CONFIG_PACKAGE_dnsmasq_full_nftset=y" >> .config
+
+echo ">>>>>> DIY-PART2 修正完成，当前配置预览： <<<<<<"
+grep "CONFIG_PACKAGE_fw4" .config || echo "未找到 FW4 配置"
+grep "CONFIG_PACKAGE_firewall" .config || echo "未找到旧防火墙配置"
+grep "luci-app-passwall" .config | grep "Nftables" || echo "Passwall NFT 组件未勾选"
+echo ">>>>>> DIY-PART2 输出结束 <<<<<<"
