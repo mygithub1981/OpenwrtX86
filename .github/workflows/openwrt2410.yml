@@ -116,11 +116,35 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
+    - name: 运行 Passwall 官方替换逻辑 (方法 2)
+      run: |
+        cd openwrt
+        # 1. 更新并安装原有 feeds
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        
+        # 2. 移除官方提到的核心库及冲突包
+        rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
+        rm -rf feeds/luci/applications/luci-app-passwall
+        rm -rf feeds/luci/applications/luci-app-passwall2
+        rm -rf feeds/luci/applications/luci-app-ddns-go
+        rm -rf feeds/packages/net/ddns-go
+        rm -rf feeds/luci/applications/luci-app-lucky
+        rm -rf feeds/packages/net/lucky
+        rm -rf feeds/packages/net/zerotier
+        
+        # 3. 注入官方最新源码到 package 目录
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
+        git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
+        git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+        git clone https://github.com/lwb1978/luci-app-timewol.git package/timewol
+        git clone https://github.com/UnblockNeteaseMusic/luci-app-unblockneteasemusic.git package/unblockneteasemusic
+        git clone https://github.com/mwarning/zerotier-openwrt package/zerotier
+        
+        # 4. 再次安装刷新索引
+        ./scripts/feeds install -f -a
 
     - name: Load custom configuration
       run: |
