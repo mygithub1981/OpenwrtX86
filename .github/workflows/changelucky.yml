@@ -116,8 +116,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         # 运行 defconfig 以应用所有变更
-        make defconfig
-
+        
     - name: 强制推送 SSH 连接指令到 Telegram
       if: github.event.inputs.ssh == 'true'
       run: |
