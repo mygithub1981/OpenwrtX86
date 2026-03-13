@@ -84,16 +84,19 @@ jobs:
         rm -rf feeds/luci/applications/luci-app-passwall2
         rm -rf feeds/luci/applications/luci-app-ddns-go
         rm -rf feeds/packages/net/ddns-go
+        rm -rf feeds/luci/applications/luci-app-lucky
+        rm -rf feeds/packages/net/lucky
         
         # 3. 注入官方最新源码到 package 目录
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
+        git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
         
         # 4. 再次安装刷新索引
         ./scripts/feeds install -f -a
-
+        
     - name: 验证插件来源 (真相大白步骤)
       run: |
         cd openwrt
