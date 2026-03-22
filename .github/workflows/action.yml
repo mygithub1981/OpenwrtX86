@@ -106,8 +106,14 @@ jobs:
         # 1. 删除 feeds 中自带的旧版 tailscale
         rm -rf feeds/packages/net/tailscale
         
-        # 2. 从 OpenWrt 官方主分支拉取最新版 tailscale 到 package 目录下
-        svn export https://github.com/openwrt/packages/trunk/net/tailscale package/tailscale
+        # 2. 浅克隆 OpenWrt 官方 packages 仓库（极速下载）
+        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
+        
+        # 3. 将最新版的 tailscale 目录复制到 package 目录下（优先级最高）
+        cp -r openwrt-packages/net/tailscale package/
+        
+        # 4. 删除临时克隆的仓库，清理空间
+        rm -rf openwrt-packages
         
         echo "Tailscale 更新完成！"
         echo "=================================================="
