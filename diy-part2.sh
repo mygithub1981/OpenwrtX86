@@ -21,3 +21,8 @@
 # 修改默认 IP 为 192.168.50.250
 # 自动查找 config_generate 文件并修改默认 IP
 find package/base-files/ -name config_generate -exec sed -i 's/192.168.1.1/192.168.50.252/g' {} +
+# 1. 删除 feeds 中自带的旧版 tailscale
+rm -rf feeds/packages/net/tailscale
+
+# 2. 从 OpenWrt 官方主分支拉取最新版 tailscale 到 package 目录下
+svn export https://github.com/openwrt/packages/trunk/net/tailscale package/tailscale
