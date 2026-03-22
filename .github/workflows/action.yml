@@ -96,7 +96,22 @@ jobs:
         
         # 4. 再次安装刷新索引
         ./scripts/feeds install -f -a
+
+    - name: 更新 Tailscale 到官方最新版
+      run: |
+        cd openwrt
+        echo "=================================================="
+        echo "开始更新 Tailscale 到官方最新版..."
         
+        # 1. 删除 feeds 中自带的旧版 tailscale
+        rm -rf feeds/packages/net/tailscale
+        
+        # 2. 从 OpenWrt 官方主分支拉取最新版 tailscale 到 package 目录下
+        svn export https://github.com/openwrt/packages/trunk/net/tailscale package/tailscale
+        
+        echo "Tailscale 更新完成！"
+        echo "=================================================="
+
     - name: 验证插件来源 (真相大白步骤)
       run: |
         cd openwrt
@@ -108,7 +123,10 @@ jobs:
         echo "正在检查 xray-core 的来源："
         find package -name "xray-core" -type d
         echo "=================================================="
-
+        echo "正在检查 tailscale 的来源："
+        find package -name "tailscale" -type d
+        echo "=================================================="
+        
     - name: 加载自定义配置 (.config) & DIY 脚本 (Part 2)
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
