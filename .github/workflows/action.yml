@@ -162,39 +162,28 @@ jobs:
         echo "Docker 及 Dockerman 联合更新完成！"
         echo "=================================================="
 
-    - name: 更新 ZeroTier 及其图形化界面 (luci-app-zerotier)
+    - name: 更新 ZeroTier 核心到官方最新版
       run: |
         cd openwrt
         echo "=================================================="
-        echo "开始更新 ZeroTier 核心及 luci-app-zerotier 到官方最新版..."
+        echo "开始更新 ZeroTier 核心到官方最新版..."
         
-        # 1. 并发浅克隆官方 packages 和 luci 仓库
+        # 1. 浅克隆官方 packages 仓库
         git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
-        git clone https://github.com/openwrt/luci.git --depth 1 openwrt-luci
         
         # 2. 删除 feeds 中自带的旧版 zerotier (核心引擎)
         rm -rf feeds/packages/net/zerotier
         
-        # 3. 彻底删除自带的旧版 luci-app-zerotier (覆盖 feeds 和大雕自带的 lean 目录)
-        rm -rf feeds/luci/applications/luci-app-zerotier
-        rm -rf package/lean/luci-app-zerotier
-        
-        # 4. 将最新版的源码原路放回 feeds 的对应目录中
+        # 3. 将最新版的源码原路放回 feeds 的对应目录中
         cp -r openwrt-packages/net/zerotier feeds/packages/net/zerotier
-        cp -r openwrt-luci/applications/luci-app-zerotier feeds/luci/applications/luci-app-zerotier
         
-        # 5. 重新安装包，让编译系统更新软链接
-        ./scripts/feeds install zerotier luci-app-zerotier
+        # 4. 重新安装包，让编译系统更新软链接
+        ./scripts/feeds install zerotier
         
-        # 6. 删除临时克隆的仓库，清理空间
-        rm -rf openwrt-packages openwrt-luci
+        # 5. 删除临时仓库，清理空间
+        rm -rf openwrt-packages
         
-        echo "ZeroTier 联合更新完成！"
-        echo "=================================================="
-        
-        echo "【验明正身】检查 ZeroTier 软链接是否成功生成："
-        find package -name "luci-app-zerotier" -type l
-        find package -name "zerotier" -type l
+        echo "ZeroTier 核心更新完成！(LuCI 界面保留 LEDE 完美适配版)"
         echo "=================================================="
 
     - name: 验证 Docker 组件更新状态
