@@ -186,6 +186,16 @@ jobs:
         echo "ZeroTier 核心更新完成！(LuCI 界面保留 LEDE 完美适配版)"
         echo "=================================================="
 
+    - name: 验证 ZeroTier 版本 (验明正身)
+      run: |
+        cd openwrt
+        echo "=================================================="
+        echo "【验明正身】当前 ZeroTier 核心版本："
+        # 直接读取替换后的 Makefile 里的版本号变量
+        grep "PKG_VERSION:=" feeds/packages/net/zerotier/Makefile
+        echo "=================================================="
+
+
     - name: 验证 Docker 组件更新状态
       run: |
         cd openwrt
