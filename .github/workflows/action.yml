@@ -121,47 +121,6 @@ jobs:
         echo "Tailscale 更新完成！"
         echo "=================================================="
 
-    - name: 更新 Docker 全家桶及图形化界面 (Dockerman)
-      run: |
-        cd openwrt
-        echo "=================================================="
-        echo "开始更新 Docker 核心依赖及 luci-app-dockerman..."
-        
-        # 1. 并发浅克隆官方 packages 和 luci 仓库
-        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
-        git clone https://github.com/openwrt/luci.git --depth 1 openwrt-luci
-        
-        # 2. 删除 feeds 中自带的旧版 Docker 全家桶及 UI
-        rm -rf feeds/packages/utils/docker
-        rm -rf feeds/packages/utils/dockerd
-        rm -rf feeds/packages/utils/containerd
-        rm -rf feeds/packages/utils/runc
-        rm -rf feeds/packages/utils/docker-compose
-        rm -rf feeds/luci/applications/luci-app-dockerman
-        rm -rf feeds/luci/libs/luci-lib-docker
-        
-        # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/utils/docker feeds/packages/utils/docker
-        cp -r openwrt-packages/utils/dockerd feeds/packages/utils/dockerd
-        cp -r openwrt-packages/utils/containerd feeds/packages/utils/containerd
-        cp -r openwrt-packages/utils/runc feeds/packages/utils/runc
-        cp -r openwrt-packages/utils/docker-compose feeds/packages/utils/docker-compose
-        cp -r openwrt-luci/applications/luci-app-dockerman feeds/luci/applications/luci-app-dockerman
-        
-        # 补充：如果有 luci-lib-docker 依赖库，一并替换（防错机制）
-        if [ -d "openwrt-luci/libs/luci-lib-docker" ]; then
-          cp -r openwrt-luci/libs/luci-lib-docker feeds/luci/libs/luci-lib-docker
-        fi
-        
-        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
-        ./scripts/feeds install docker dockerd containerd runc docker-compose luci-app-dockerman
-        
-        # 5. 删除临时克隆的两个仓库，清理空间
-        rm -rf openwrt-packages openwrt-luci
-        
-        echo "Docker 及 Dockerman 联合更新完成！"
-        echo "=================================================="
-
     - name: 更新 ZeroTier 核心到官方最新版
       run: |
         cd openwrt
@@ -193,19 +152,6 @@ jobs:
         echo "【验明正身】当前 ZeroTier 核心版本："
         # 直接读取替换后的 Makefile 里的版本号变量
         grep "PKG_VERSION:=" feeds/packages/net/zerotier/Makefile
-        echo "=================================================="
-
-
-    - name: 验证 Docker 组件更新状态
-      run: |
-        cd openwrt
-        echo "=================================================="
-        echo "【验明正身】当前 dockerd 版本："
-        grep "PKG_VERSION:=" feeds/packages/utils/dockerd/Makefile
-        echo "【验明正身】当前 containerd 版本："
-        grep "PKG_VERSION:=" feeds/packages/utils/containerd/Makefile
-        echo "【验明正身】检查 dockerman 软链接是否成功生成："
-        find package -name "luci-app-dockerman" -type l
         echo "=================================================="
 
     - name: 验证插件来源 (真相大白步骤)
