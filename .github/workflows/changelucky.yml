@@ -1,4 +1,4 @@
-name: Build LEDE (all also lucky)
+name: Build LEDE (nochangezerotier)
 
 on:
   repository_dispatch:
