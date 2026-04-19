@@ -195,6 +195,18 @@ jobs:
         grep "PKG_VERSION:=" feeds/packages/net/zerotier/Makefile
         echo "=================================================="
 
+    - name: 验证 Docker 组件更新状态
+      run: |
+        cd openwrt
+        echo "=================================================="
+        echo "【验明正身】当前 dockerd 版本："
+        grep "PKG_VERSION:=" feeds/packages/utils/dockerd/Makefile
+        echo "【验明正身】当前 containerd 版本："
+        grep "PKG_VERSION:=" feeds/packages/utils/containerd/Makefile
+        echo "【验明正身】检查 dockerman 软链接是否成功生成："
+        find package -name "luci-app-dockerman" -type l
+        echo "=================================================="
+
     - name: 验证插件来源 (真相大白步骤)
       run: |
         cd openwrt
