@@ -1,4 +1,4 @@
-name: Build LEDE (Standard & Official Method 2)
+name: Build LEDE (changedockerzerotier)
 
 on:
   repository_dispatch:
