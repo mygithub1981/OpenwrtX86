@@ -105,18 +105,17 @@ jobs:
         
         # 1. 浅克隆 OpenWrt 官方 packages 仓库
         git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
-        
-        # 2. 删除 feeds 中自带的旧版 tailscale
+        git clone https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community.git --depth 1 openwrt-luci
+        # 2. 删除 feeds 中自带的旧版 luci
+        rm -rf feeds/luci/applications/luci-app-tailscale-community
         rm -rf feeds/packages/net/tailscale
-        
-        # 3. 将最新版 tailscale 原路放回 feeds 的对应目录中（解决相对路径报错）
+        # 3. 将最新版的源码原路放回 feeds 的对应目录中
+        cp -r openwrt-luci/applications/luci-app-tailscale-community feeds/luci/applications/luci-app-tailscale-community
         cp -r openwrt-packages/net/tailscale feeds/packages/net/tailscale
-        
-        # 4. 重新安装 tailscale 包，让编译系统更新软链接
-        ./scripts/feeds install tailscale
-        
-        # 5. 删除临时克隆的仓库，清理空间
-        rm -rf openwrt-packages
+        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
+        ./scripts/feeds install tailscale luci-app-tailscale-community
+        # 5. 删除临时克隆的两个仓库，清理空间
+        rm -rf openwrt-packages openwrt-luci
         
         echo "Tailscale 更新完成！"
         echo "=================================================="
