@@ -21,3 +21,8 @@
 # 修改默认 IP 为 192.168.50.250
 # 自动查找 config_generate 文件并修改默认 IP
 find package/base-files/ -name config_generate -exec sed -i 's/192.168.1.1/192.168.50.252/g' {} +
+# 修改系统默认的 TCP 拥塞控制算法为 BBR
+sed -i '/net.ipv4.tcp_congestion_control/d' package/base-files/files/etc/sysctl.conf
+sed -i '/net.core.default_qdisc/d' package/base-files/files/etc/sysctl.conf
+echo "net.core.default_qdisc=fq" >> package/base-files/files/etc/sysctl.conf
+echo "net.ipv4.tcp_congestion_control=bbr" >> package/base-files/files/etc/sysctl.conf
