@@ -144,6 +144,9 @@ jobs:
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+
+        # 4. 再次安装刷新索引
+        ./scripts/feeds install -f -a
                 
     - name: Load custom configuration
       run: |
