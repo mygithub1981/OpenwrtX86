@@ -149,7 +149,7 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "开始更新 Tailscale 到官方最新版..."
-
+                        
         # 1. 删除 feeds 中自带的旧版 luci
         rm -rf feeds/luci/applications/luci-app-tailscale-community
         rm -rf feeds/packages/net/tailscale
@@ -159,44 +159,50 @@ jobs:
         git clone https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community package/tailscale-community-luci
                        
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/tailscale package/
+        cp -r openwrt-packages/net/tailscale feeds/packages/net/tailscale
+
+        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
+        ./scripts/feeds install tailscale
         
-        # 4. 删除临时克隆的两个仓库，清理空间
+        # 5. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages
         
         echo "Tailscale 更新完成！"
         echo "=================================================="
-    
+
     - name: 更新 ZeroTier 核心到官方最新版
       run: |
         cd openwrt
         echo "=================================================="
         echo "开始更新 ZeroTier 核心到官方最新版..."
-
-        # 1. 删除 feeds 中自带的旧版 zerotier (核心引擎)
+        
+        # 1. 浅克隆官方 packages 仓库
+        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
+        
+        # 2. 删除 feeds 中自带的旧版 zerotier (核心引擎)
         rm -rf feeds/packages/net/zerotier
         
-        # 2. 浅克隆官方 packages 仓库
-        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
-             
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/zerotier package/
-                        
-        # 4. 删除临时仓库，清理空间
+        cp -r openwrt-packages/net/zerotier feeds/packages/net/zerotier
+        
+        # 4. 重新安装包，让编译系统更新软链接
+        ./scripts/feeds install zerotier
+        
+        # 5. 删除临时仓库，清理空间
         rm -rf openwrt-packages
         
         echo "ZeroTier 核心更新完成！(LuCI 界面保留 LEDE 完美适配版)"
         echo "=================================================="
-
+    
     - name: 验证 ZeroTier 版本 (验明正身)
       run: |
         cd openwrt
         echo "=================================================="
         echo "【验明正身】当前 ZeroTier 核心版本："
-        # 路径已修正：直接读取 package 目录下的 Makefile
-        grep "PKG_VERSION:=" package/zerotier/Makefile || echo "未找到 Makefile"
+        # 直接读取替换后的 Makefile 里的版本号变量
+        grep "PKG_VERSION:=" feeds/packages/net/zerotier/Makefile
         echo "=================================================="
-    
+
     - name: 验证插件来源 (真相大白步骤)
       run: |
         cd openwrt
@@ -207,13 +213,11 @@ jobs:
         echo "正在检查 xray-core 的来源："
         find package -name "xray-core" -type d
         echo "=================================================="
-        echo "正在检查 tailscale 的来源 (它已是物理目录，不再是软链接)："
-        # 修正为 -type d
-        find package -name "tailscale" -type d
+        echo "正在检查 tailscale 的来源 (它应该是一个软链接)："
+        find package -name "tailscale" -type l
         echo "=================================================="
         echo "正在核对 tailscale 的版本号以验明正身："
-        # 路径已修正为 package 目录
-        grep "PKG_VERSION:=" package/tailscale/Makefile || echo "未找到 Makefile"
+        grep "PKG_VERSION:=" feeds/packages/net/tailscale/Makefile
         echo "=================================================="
 
     - name: Load custom configuration
