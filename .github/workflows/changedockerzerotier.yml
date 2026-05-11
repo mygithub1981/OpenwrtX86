@@ -181,8 +181,8 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "【验明正身】当前 ZeroTier 核心版本："
-        # 直接读取替换后的 Makefile 里的版本号变量
-        grep "PKG_VERSION:=" feeds/packages/net/zerotier/Makefile
+        # 路径已修正：直接读取 package 目录下的 Makefile
+        grep "PKG_VERSION:=" package/zerotier/Makefile || echo "未找到 Makefile"
         echo "=================================================="
 
     - name: 验证 Docker 组件更新状态
@@ -190,11 +190,12 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "【验明正身】当前 dockerd 版本："
-        grep "PKG_VERSION:=" feeds/packages/utils/dockerd/Makefile
+        grep "PKG_VERSION:=" package/dockerd/Makefile || echo "未找到 Makefile"
         echo "【验明正身】当前 containerd 版本："
-        grep "PKG_VERSION:=" feeds/packages/utils/containerd/Makefile
-        echo "【验明正身】检查 dockerman 软链接是否成功生成："
-        find package -name "luci-app-dockerman" -type l
+        grep "PKG_VERSION:=" package/containerd/Makefile || echo "未找到 Makefile"
+        echo "【验明正身】检查 dockerman 物理目录是否成功生成："
+        # 修正为 -type d，因为 cp -r 拷贝过来的是物理目录
+        find package -name "luci-app-dockerman" -type d
         echo "=================================================="
 
     - name: 验证插件来源 (真相大白步骤)
@@ -207,11 +208,13 @@ jobs:
         echo "正在检查 xray-core 的来源："
         find package -name "xray-core" -type d
         echo "=================================================="
-        echo "正在检查 tailscale 的来源 (它应该是一个软链接)："
-        find package -name "tailscale" -type l
+        echo "正在检查 tailscale 的来源 (它已是物理目录，不再是软链接)："
+        # 修正为 -type d
+        find package -name "tailscale" -type d
         echo "=================================================="
         echo "正在核对 tailscale 的版本号以验明正身："
-        grep "PKG_VERSION:=" feeds/packages/net/tailscale/Makefile
+        # 路径已修正为 package 目录
+        grep "PKG_VERSION:=" package/tailscale/Makefile || echo "未找到 Makefile"
         echo "=================================================="
         
     - name: 加载自定义配置 (.config) & DIY 脚本 (Part 2)
