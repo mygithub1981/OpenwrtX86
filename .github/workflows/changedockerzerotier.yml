@@ -140,22 +140,15 @@ jobs:
         rm -rf feeds/luci/libs/luci-lib-docker
         
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/utils/docker feeds/packages/utils/docker
-        cp -r openwrt-packages/utils/dockerd feeds/packages/utils/dockerd
-        cp -r openwrt-packages/utils/containerd feeds/packages/utils/containerd
-        cp -r openwrt-packages/utils/runc feeds/packages/utils/runc
-        cp -r openwrt-packages/utils/docker-compose feeds/packages/utils/docker-compose
-        cp -r openwrt-luci/applications/luci-app-dockerman feeds/luci/applications/luci-app-dockerman
-        
-        # 补充：如果有 luci-lib-docker 依赖库，一并替换（防错机制）
-        if [ -d "openwrt-luci/libs/luci-lib-docker" ]; then
-          cp -r openwrt-luci/libs/luci-lib-docker feeds/luci/libs/luci-lib-docker
-        fi
-        
-        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
-        ./scripts/feeds install docker dockerd containerd runc docker-compose luci-app-dockerman luci-lib-docker
-        
-        # 5. 删除临时克隆的两个仓库，清理空间
+        cp -r openwrt-packages/utils/docker package/docker-packages
+        cp -r openwrt-packages/utils/dockerd package/docker-packages
+        cp -r openwrt-packages/utils/containerd package/docker-packages
+        cp -r openwrt-packages/utils/runc package/docker-packages
+        cp -r openwrt-packages/utils/docker-compose package/docker-packages
+        cp -r openwrt-luci/applications/luci-app-dockerman package/dockerman-luci
+        cp -r openwrt-luci/libs/luci-lib-docker package/dockerman-luci
+                
+        # 4. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages openwrt-luci
         
         echo "Docker 及 Dockerman 联合更新完成！"
@@ -166,20 +159,17 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "开始更新 ZeroTier 核心到官方最新版..."
-        
-        # 1. 浅克隆官方 packages 仓库
-        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
-        
-        # 2. 删除 feeds 中自带的旧版 zerotier (核心引擎)
+
+        # 1. 删除 feeds 中自带的旧版 zerotier (核心引擎)
         rm -rf feeds/packages/net/zerotier
         
+        # 2. 浅克隆官方 packages 仓库
+        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
+             
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/zerotier feeds/packages/net/zerotier
-        
-        # 4. 重新安装包，让编译系统更新软链接
-        ./scripts/feeds install zerotier
-        
-        # 5. 删除临时仓库，清理空间
+        cp -r openwrt-packages/net/zerotier package/zerotier-packages
+                        
+        # 4. 删除临时仓库，清理空间
         rm -rf openwrt-packages
         
         echo "ZeroTier 核心更新完成！(LuCI 界面保留 LEDE 完美适配版)"
