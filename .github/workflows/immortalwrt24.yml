@@ -150,7 +150,7 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "开始更新 Tailscale 到官方最新版..."
-
+                        
         # 1. 删除 feeds 中自带的旧版 luci
         rm -rf feeds/luci/applications/luci-app-tailscale-community
         rm -rf feeds/packages/net/tailscale
@@ -160,9 +160,12 @@ jobs:
         git clone https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community package/tailscale-community-luci
                        
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/tailscale package/tailscale-packages
+        cp -r openwrt-packages/net/tailscale feeds/packages/net/tailscale
+
+        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
+        ./scripts/feeds install tailscale
         
-        # 4. 删除临时克隆的两个仓库，清理空间
+        # 5. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages
         
         echo "Tailscale 更新完成！"
@@ -187,20 +190,23 @@ jobs:
         rm -rf feeds/luci/applications/luci-app-dockerman
         rm -rf feeds/luci/libs/luci-lib-docker
         
-         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/utils/docker package/docker-packages/docker
-        cp -r openwrt-packages/utils/dockerd package/docker-packages/dockerd
-        cp -r openwrt-packages/utils/containerd package/docker-packages/containerd
-        cp -r openwrt-packages/utils/runc package/docker-packages/runc
-        cp -r openwrt-packages/utils/docker-compose package/docker-packages/docker-compose
-        cp -r openwrt-luci/applications/luci-app-dockerman package/docker-luci/luci-app-dockerman
-
+        # 3. 将最新版的源码原路放回 feeds 的对应目录中
+        cp -r openwrt-packages/utils/docker feeds/packages/utils/docker
+        cp -r openwrt-packages/utils/dockerd feeds/packages/utils/dockerd
+        cp -r openwrt-packages/utils/containerd feeds/packages/utils/containerd
+        cp -r openwrt-packages/utils/runc feeds/packages/utils/runc
+        cp -r openwrt-packages/utils/docker-compose feeds/packages/utils/docker-compose
+        cp -r openwrt-luci/applications/luci-app-dockerman feeds/luci/applications/luci-app-dockerman
+        
         # 补充：如果有 luci-lib-docker 依赖库，一并替换（防错机制）
         if [ -d "openwrt-luci/libs/luci-lib-docker" ]; then
-          cp -r openwrt-luci/libs/luci-lib-docker package/docker-luci/luci-lib-docker
+          cp -r openwrt-luci/libs/luci-lib-docker feeds/luci/libs/luci-lib-docker
         fi
-                
-        # 4. 删除临时克隆的两个仓库，清理空间
+        
+        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
+        ./scripts/feeds install docker dockerd containerd runc docker-compose luci-app-dockerman luci-lib-docker
+        
+        # 5. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages openwrt-luci
         
         echo "Docker 及 Dockerman 联合更新完成！"
@@ -211,17 +217,20 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "开始更新 ZeroTier 核心到官方最新版..."
-
-        # 1. 删除 feeds 中自带的旧版 zerotier (核心引擎)
+        
+        # 1. 浅克隆官方 packages 仓库
+        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
+        
+        # 2. 删除 feeds 中自带的旧版 zerotier (核心引擎)
         rm -rf feeds/packages/net/zerotier
         
-        # 2. 浅克隆官方 packages 仓库
-        git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
-             
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/zerotier package/zerotier-packages
-                        
-        # 4. 删除临时仓库，清理空间
+        cp -r openwrt-packages/net/zerotier feeds/packages/net/zerotier
+        
+        # 4. 重新安装包，让编译系统更新软链接
+        ./scripts/feeds install zerotier
+        
+        # 5. 删除临时仓库，清理空间
         rm -rf openwrt-packages
         
         echo "ZeroTier 核心更新完成！(LuCI 界面保留 LEDE 完美适配版)"
@@ -232,8 +241,8 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "【验明正身】当前 ZeroTier 核心版本："
-        # 路径已修正：直接读取 package 目录下的 Makefile
-        grep "PKG_VERSION:=" package/zerotier-packages/zerotier/Makefile || echo "未找到 Makefile"
+        # 直接读取替换后的 Makefile 里的版本号变量
+        grep "PKG_VERSION:=" feeds/packages/net/zerotier/Makefile
         echo "=================================================="
 
     - name: 验证 Docker 组件更新状态
@@ -241,12 +250,11 @@ jobs:
         cd openwrt
         echo "=================================================="
         echo "【验明正身】当前 dockerd 版本："
-        grep "PKG_VERSION:=" package/docker-packages/dockerd/Makefile || echo "未找到 Makefile"
+        grep "PKG_VERSION:=" feeds/packages/utils/dockerd/Makefile
         echo "【验明正身】当前 containerd 版本："
-        grep "PKG_VERSION:=" package/docker-packages/containerd/Makefile || echo "未找到 Makefile"
-        echo "【验明正身】检查 dockerman 物理目录是否成功生成："
-        # 修正为 -type d，因为 cp -r 拷贝过来的是物理目录
-        find package -name "luci-app-dockerman" -type d
+        grep "PKG_VERSION:=" feeds/packages/utils/containerd/Makefile
+        echo "【验明正身】检查 dockerman 软链接是否成功生成："
+        find package -name "luci-app-dockerman" -type l
         echo "=================================================="
 
     - name: 验证插件来源 (真相大白步骤)
@@ -259,13 +267,11 @@ jobs:
         echo "正在检查 xray-core 的来源："
         find package -name "xray-core" -type d
         echo "=================================================="
-        echo "正在检查 tailscale 的来源 (它已是物理目录，不再是软链接)："
-        # 修正为 -type d
-        find package -name "tailscale" -type d
+        echo "正在检查 tailscale 的来源 (它应该是一个软链接)："
+        find package -name "tailscale" -type l
         echo "=================================================="
         echo "正在核对 tailscale 的版本号以验明正身："
-        # 路径已修正为 package 目录
-        grep "PKG_VERSION:=" package/tailscale-packages/tailscale/Makefile || echo "未找到 Makefile"
+        grep "PKG_VERSION:=" feeds/packages/net/tailscale/Makefile
         echo "=================================================="
                        
     - name: Load custom configuration
