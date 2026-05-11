@@ -197,13 +197,10 @@ jobs:
 
         # 补充：如果有 luci-lib-docker 依赖库，一并替换（防错机制）
         if [ -d "openwrt-luci/libs/luci-lib-docker" ]; then
-          cp -r openwrt-luci/libs/luci-lib-docker feeds/luci/libs/luci-lib-docker
+          cp -r openwrt-luci/libs/luci-lib-docker package/
         fi
-        
-        # 4. 一次性重新安装所有相关包，让编译系统批量更新软链接
-        ./scripts/feeds install luci-lib-docker
                 
-        # 5. 删除临时克隆的两个仓库，清理空间
+        # 4. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages openwrt-luci
         
         echo "Docker 及 Dockerman 联合更新完成！"
