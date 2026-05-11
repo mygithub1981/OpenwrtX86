@@ -93,9 +93,6 @@ jobs:
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
-        
-        # 4. 再次安装刷新索引
-        ./scripts/feeds install -f -a
 
     - name: 更新 Tailscale 到官方最新版
       run: |
@@ -112,7 +109,7 @@ jobs:
         git clone https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community package/tailscale-community-luci
                        
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/tailscale package/tailscale-packages
+        cp -r openwrt-packages/net/tailscale package/
         
         # 4. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages
@@ -140,13 +137,13 @@ jobs:
         rm -rf feeds/luci/libs/luci-lib-docker
         
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/utils/docker package/docker-packages
-        cp -r openwrt-packages/utils/dockerd package/docker-packages
-        cp -r openwrt-packages/utils/containerd package/docker-packages
-        cp -r openwrt-packages/utils/runc package/docker-packages
-        cp -r openwrt-packages/utils/docker-compose package/docker-packages
-        cp -r openwrt-luci/applications/luci-app-dockerman package/dockerman-luci
-        cp -r openwrt-luci/libs/luci-lib-docker package/dockerman-luci
+        cp -r openwrt-packages/utils/docker package/
+        cp -r openwrt-packages/utils/dockerd package/
+        cp -r openwrt-packages/utils/containerd package/
+        cp -r openwrt-packages/utils/runc package/
+        cp -r openwrt-packages/utils/docker-compose package/
+        cp -r openwrt-luci/applications/luci-app-dockerman package/
+        cp -r openwrt-luci/libs/luci-lib-docker package/
                 
         # 4. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages openwrt-luci
@@ -167,7 +164,7 @@ jobs:
         git clone https://github.com/openwrt/packages.git --depth 1 openwrt-packages
              
         # 3. 将最新版的源码原路放回 feeds 的对应目录中
-        cp -r openwrt-packages/net/zerotier package/zerotier-packages
+        cp -r openwrt-packages/net/zerotier package/
                         
         # 4. 删除临时仓库，清理空间
         rm -rf openwrt-packages
