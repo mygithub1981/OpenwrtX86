@@ -143,7 +143,11 @@ jobs:
         cp -r openwrt-packages/utils/runc package/
         cp -r openwrt-packages/utils/docker-compose package/
         cp -r openwrt-luci/applications/luci-app-dockerman package/
-        cp -r openwrt-luci/libs/luci-lib-docker package/
+
+        # 补充：如果有 luci-lib-docker 依赖库，一并替换（防错机制）
+        if [ -d "openwrt-luci/libs/luci-lib-docker" ]; then
+          cp -r openwrt-luci/libs/luci-lib-docker package/
+        fi
                 
         # 4. 删除临时克隆的两个仓库，清理空间
         rm -rf openwrt-packages openwrt-luci
