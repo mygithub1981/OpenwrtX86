@@ -11,7 +11,7 @@ on:
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: openwrt-25.12
+  REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: immortalwrt.config
   DIY_P1_SH: diy-part1.sh
@@ -113,7 +113,7 @@ jobs:
 
     - name: Clone source code
       run: |
-        git clone --depth=1 $REPO_URL -b $REPO_BRANCH openwrt
+        git clone -b $REPO_BRANCH --single-branch --filter=blob:none $REPO_URL  openwrt
 
     - name: Load custom feeds
       run: |
@@ -144,10 +144,7 @@ jobs:
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
-
-        # 4. 再次安装刷新索引
-        ./scripts/feeds install -f -a
-                
+                       
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
