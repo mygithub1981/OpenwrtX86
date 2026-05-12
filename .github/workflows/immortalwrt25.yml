@@ -126,21 +126,25 @@ jobs:
       run: |
         cd openwrt
         # 1. 更新并安装原有 feeds
+        # 更新 feeds
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        
-        # 2. 移除官方提到的核心库及冲突包
+
+        # 删除冲突包
         rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
-        rm -rf feeds/luci/applications/luci-app-passwall
-        rm -rf feeds/luci/applications/luci-app-passwall2
+        rm -rf feeds/luci/applications/luci-app-passwall*
         rm -rf feeds/luci/applications/luci-app-ddns-go
-        rm -rf feeds/packages/net/ddns-go
         rm -rf feeds/luci/applications/luci-app-lucky
-        rm -rf feeds/packages/net/lucky
         rm -rf feeds/luci/applications/luci-app-argon-config
         rm -rf feeds/luci/themes/luci-theme-argon
 
-        # 3. 注入官方最新源码到 package 目录
+        # 删除 LEDE 内置重复包（推荐）
+        find package/ -type d -name "*passwall*" | xargs rm -rf || true
+        find package/ -type d -name "*argon*" | xargs rm -rf || true
+        find package/ -type d -name "*lucky*" | xargs rm -rf || true
+        find package/ -type d -name "*ddns-go*" | xargs rm -rf || true
+
+        # 拉取最新版
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
@@ -148,6 +152,9 @@ jobs:
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
         git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/argon
         git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git package/argon-luci
+
+        # 重新刷新索引（重要）
+        ./scripts/feeds install -a
 
     - name: Load custom configuration
       run: |
