@@ -74,11 +74,12 @@ jobs:
     - name: 运行 Passwall 官方替换逻辑 (方法 2)
       run: |
         cd openwrt
-        # 1. 更新并安装原有 feeds
+        # 1.更新并安装原有 feeds
+        # 更新 feeds
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        
-        # 2. 移除官方提到的核心库及冲突包
+
+        # 2.删除冲突包
         rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
@@ -86,13 +87,28 @@ jobs:
         rm -rf feeds/packages/net/ddns-go
         rm -rf feeds/luci/applications/luci-app-lucky
         rm -rf feeds/packages/net/lucky
-        
-        # 3. 注入官方最新源码到 package 目录
+        rm -rf feeds/luci/applications/luci-app-argon-config
+        rm -rf feeds/luci/themes/luci-theme-argon
+
+        # 3.清理 package/feeds/ 下产生的无效软链接（极度推荐！）
+        # find 命令结合 -xtype l 会自动找出并删除所有指向空目标的死链接
+        find package/feeds/ -type l -xtype l -delete
+
+        # 4.删除 LEDE 内置重复包（使用 xargs -r 防止空结果报错）
+        find package/ -type d -name "*passwall*" | xargs -r rm -rf
+        find package/ -type d -name "*argon*" | xargs -r rm -rf
+        find package/ -type d -name "*lucky*" | xargs -r rm -rf
+        find package/ -type d -name "*ddns-go*" | xargs -r rm -rf
+
+        # 5.拉取最新版
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+        git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+        git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
+        rm -rf tmp/
 
     - name: 更新 Tailscale 到官方最新版
       run: |
