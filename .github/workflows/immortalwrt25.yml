@@ -146,7 +146,7 @@ jobs:
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
-        git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
+        git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/argon
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
 
     - name: Load custom configuration
