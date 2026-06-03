@@ -177,7 +177,51 @@ jobs:
       run: |
         cd openwrt
         echo "开始编译 PassWall 模块软件包，效果等同于 menuconfig 中选择 M 后生成安装包"
-        make package/compile -j$(($(nproc) * 3 / 2)) || make package/compile -j1 V=s
+
+        set +e
+        make package/compile -j$(($(nproc) * 3 / 2))
+        RET=$?
+
+        if [ "$RET" -ne 0 ]; then
+          echo "============================================================"
+          echo "并行编译失败，开始使用 -j1 V=s 重新编译以输出详细错误"
+          echo "============================================================"
+          make package/compile -j1 V=s
+          RET=$?
+        fi
+
+        if [ "$RET" -ne 0 ]; then
+          echo "============================================================"
+          echo "PassWall 模块包编译失败，输出 OpenWrt 日志目录中的关键错误"
+          echo "============================================================"
+
+          if [ -d logs ]; then
+            echo "最近生成的日志文件："
+            find logs -type f -printf '%T@ %p\n' | sort -n | tail -n 30 | cut -d' ' -f2- || true
+
+            echo ""
+            echo "包含 error / failed / No such file / not found 的日志尾部："
+            find logs -type f | sort | while read -r f; do
+              if grep -qiE 'error|failed|No such file|not found|undefined reference|No rule to make target' "$f"; then
+                echo ""
+                echo "-------------------- $f --------------------"
+                tail -n 220 "$f"
+              fi
+            done
+          else
+            echo "没有找到 openwrt/logs 目录。"
+          fi
+
+          exit "$RET"
+        fi
+
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: passwall-build-logs
+        path: openwrt/logs/
+        if-no-files-found: ignore
 
     - name: Collect PassWall packages
       run: |
