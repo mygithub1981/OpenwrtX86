@@ -50,27 +50,20 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
-    - name: Replace PassWall packages with latest official source
+    - name: Replace PassWall packages with official method 2
       run: |
         cd openwrt
 
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-        # 删除可能冲突的旧包
-        rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
+        # 移除 openwrt feeds 自带的核心库
+        rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,v2ray-plugin,xray-plugin,geoview,shadow-tls}
+        git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+
+        # 移除 openwrt feeds 过时的 luci 版本
         rm -rf feeds/luci/applications/luci-app-passwall
-        rm -rf feeds/luci/applications/luci-app-passwall2
-
-        # 清理无效软链接
-        find package/feeds/ -type l -xtype l -delete || true
-
-        # 删除源码树中可能重复的 PassWall 包
-        find package/ -type d -name "*passwall*" | xargs -r rm -rf
-
-        # 拉取最新 PassWall 源码
-        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
-        git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+        git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
 
         rm -rf tmp/
 
@@ -105,15 +98,45 @@ jobs:
         check_y CONFIG_TARGET_x86_64_DEVICE_generic
         check_y CONFIG_PACKAGE_luci-app-passwall
         check_y CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Geoview
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Libev_Client
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Libev_Server
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox
-        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray
+        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray_Plugin
         check_y CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy
+
+        check_y CONFIG_PACKAGE_chinadns-ng
+        check_y CONFIG_PACKAGE_dns2socks
+        check_y CONFIG_PACKAGE_geoview
+        check_y CONFIG_PACKAGE_haproxy
+        check_y CONFIG_PACKAGE_hysteria
+        check_y CONFIG_PACKAGE_ipt2socks
+        check_y CONFIG_PACKAGE_microsocks
+        check_y CONFIG_PACKAGE_naiveproxy
+        check_y CONFIG_PACKAGE_shadowsocks-libev-ss-local
+        check_y CONFIG_PACKAGE_shadowsocks-libev-ss-redir
+        check_y CONFIG_PACKAGE_shadowsocks-libev-ss-server
+        check_y CONFIG_PACKAGE_shadowsocks-rust-sslocal
+        check_y CONFIG_PACKAGE_simple-obfs-client
+        check_y CONFIG_PACKAGE_sing-box
+        check_y CONFIG_PACKAGE_tcping
+        check_y CONFIG_PACKAGE_v2ray-geoip
+        check_y CONFIG_PACKAGE_v2ray-geosite
+        check_y CONFIG_PACKAGE_v2ray-plugin
+        check_y CONFIG_PACKAGE_xray-core
+        check_y CONFIG_PACKAGE_xray-plugin
 
         echo ""
         echo "PassWall 相关配置摘要："
-        grep -E "CONFIG_PACKAGE_luci-app-passwall|CONFIG_PACKAGE_sing-box|CONFIG_PACKAGE_xray-core|CONFIG_PACKAGE_hysteria|CONFIG_PACKAGE_v2ray" .config || true
+        grep -E "CONFIG_PACKAGE_luci-app-passwall|CONFIG_PACKAGE_chinadns-ng|CONFIG_PACKAGE_dns2socks|CONFIG_PACKAGE_geoview|CONFIG_PACKAGE_haproxy|CONFIG_PACKAGE_hysteria|CONFIG_PACKAGE_ipt2socks|CONFIG_PACKAGE_microsocks|CONFIG_PACKAGE_naiveproxy|CONFIG_PACKAGE_shadowsocks|CONFIG_PACKAGE_simple-obfs|CONFIG_PACKAGE_sing-box|CONFIG_PACKAGE_tcping|CONFIG_PACKAGE_v2ray|CONFIG_PACKAGE_xray" .config || true
 
         if [ "$FAILED" -ne 0 ]; then
           echo "❌ PassWall 配置检查失败，请检查 passwall-only.config 或上游包名/依赖变化。"
