@@ -164,6 +164,15 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
+    - name: Prepare OpenWrt build tools and toolchain
+      run: |
+        cd openwrt
+        echo "准备 OpenWrt host tools，生成 staging_dir/host/bin/sed 等工具"
+        make tools/install -j$(($(nproc) * 3 / 2)) || make tools/install -j1 V=s
+
+        echo "准备 OpenWrt toolchain，用于编译目标架构软件包"
+        make toolchain/install -j$(($(nproc) * 3 / 2)) || make toolchain/install -j1 V=s
+
     - name: Compile PassWall module packages
       run: |
         cd openwrt
