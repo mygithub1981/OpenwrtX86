@@ -78,7 +78,7 @@ jobs:
         make defconfig
 
         echo "============================================================"
-        echo "检查 PassWall 配置是否生效"
+        echo "检查 PassWall 模块包配置是否生效"
         echo "============================================================"
 
         FAILED=0
@@ -93,11 +93,25 @@ jobs:
           fi
         }
 
+        check_m() {
+          local cfg="$1"
+          if grep -q "^${cfg}=m$" .config; then
+            echo "✅ ${cfg}=m"
+          else
+            echo "::error::❌ 缺少或不是模块：${cfg}=m"
+            echo "当前状态："
+            grep -E "^${cfg}=|^# ${cfg} is not set" .config || true
+            FAILED=1
+          fi
+        }
+
         check_y CONFIG_TARGET_x86
         check_y CONFIG_TARGET_x86_64
         check_y CONFIG_TARGET_x86_64_DEVICE_generic
-        check_y CONFIG_PACKAGE_luci-app-passwall
-        check_y CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
+
+        check_m CONFIG_PACKAGE_luci-app-passwall
+        check_m CONFIG_PACKAGE_luci-i18n-passwall-zh-cn
+
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Geoview
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria
@@ -113,37 +127,37 @@ jobs:
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray_Plugin
         check_y CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy
 
-        check_y CONFIG_PACKAGE_chinadns-ng
-        check_y CONFIG_PACKAGE_dns2socks
-        check_y CONFIG_PACKAGE_geoview
-        check_y CONFIG_PACKAGE_haproxy
-        check_y CONFIG_PACKAGE_hysteria
-        check_y CONFIG_PACKAGE_ipt2socks
-        check_y CONFIG_PACKAGE_microsocks
-        check_y CONFIG_PACKAGE_naiveproxy
-        check_y CONFIG_PACKAGE_shadowsocks-libev-ss-local
-        check_y CONFIG_PACKAGE_shadowsocks-libev-ss-redir
-        check_y CONFIG_PACKAGE_shadowsocks-libev-ss-server
-        check_y CONFIG_PACKAGE_shadowsocks-rust-sslocal
-        check_y CONFIG_PACKAGE_simple-obfs-client
-        check_y CONFIG_PACKAGE_sing-box
-        check_y CONFIG_PACKAGE_tcping
-        check_y CONFIG_PACKAGE_v2ray-geoip
-        check_y CONFIG_PACKAGE_v2ray-geosite
-        check_y CONFIG_PACKAGE_v2ray-plugin
-        check_y CONFIG_PACKAGE_xray-core
-        check_y CONFIG_PACKAGE_xray-plugin
+        check_m CONFIG_PACKAGE_chinadns-ng
+        check_m CONFIG_PACKAGE_dns2socks
+        check_m CONFIG_PACKAGE_geoview
+        check_m CONFIG_PACKAGE_haproxy
+        check_m CONFIG_PACKAGE_hysteria
+        check_m CONFIG_PACKAGE_ipt2socks
+        check_m CONFIG_PACKAGE_microsocks
+        check_m CONFIG_PACKAGE_naiveproxy
+        check_m CONFIG_PACKAGE_shadowsocks-libev-ss-local
+        check_m CONFIG_PACKAGE_shadowsocks-libev-ss-redir
+        check_m CONFIG_PACKAGE_shadowsocks-libev-ss-server
+        check_m CONFIG_PACKAGE_shadowsocks-rust-sslocal
+        check_m CONFIG_PACKAGE_simple-obfs-client
+        check_m CONFIG_PACKAGE_sing-box
+        check_m CONFIG_PACKAGE_tcping
+        check_m CONFIG_PACKAGE_v2ray-geoip
+        check_m CONFIG_PACKAGE_v2ray-geosite
+        check_m CONFIG_PACKAGE_v2ray-plugin
+        check_m CONFIG_PACKAGE_xray-core
+        check_m CONFIG_PACKAGE_xray-plugin
 
         echo ""
-        echo "PassWall 相关配置摘要："
+        echo "PassWall 模块包配置摘要："
         grep -E "CONFIG_PACKAGE_luci-app-passwall|CONFIG_PACKAGE_chinadns-ng|CONFIG_PACKAGE_dns2socks|CONFIG_PACKAGE_geoview|CONFIG_PACKAGE_haproxy|CONFIG_PACKAGE_hysteria|CONFIG_PACKAGE_ipt2socks|CONFIG_PACKAGE_microsocks|CONFIG_PACKAGE_naiveproxy|CONFIG_PACKAGE_shadowsocks|CONFIG_PACKAGE_simple-obfs|CONFIG_PACKAGE_sing-box|CONFIG_PACKAGE_tcping|CONFIG_PACKAGE_v2ray|CONFIG_PACKAGE_xray" .config || true
 
         if [ "$FAILED" -ne 0 ]; then
-          echo "❌ PassWall 配置检查失败，请检查 passwall-only.config 或上游包名/依赖变化。"
+          echo "❌ PassWall 模块包配置检查失败，请检查 passwall-only.config 或上游包名/依赖变化。"
           exit 1
         fi
 
-        echo "✅ PassWall 配置检查通过。"
+        echo "✅ PassWall 模块包配置检查通过。"
 
     - name: Download source packages
       run: |
@@ -152,10 +166,10 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile PassWall related packages
+    - name: Compile PassWall module packages
       run: |
         cd openwrt
-        echo "开始编译 PassWall 相关软件包"
+        echo "开始编译 PassWall 模块软件包，效果等同于 menuconfig 中选择 M 后生成安装包"
         make package/compile -j$(($(nproc) * 3 / 2)) || make package/compile -j1 V=s
 
     - name: Collect PassWall packages
