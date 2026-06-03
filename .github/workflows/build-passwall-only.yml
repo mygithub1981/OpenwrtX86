@@ -176,23 +176,59 @@ jobs:
     - name: Compile PassWall module packages
       run: |
         cd openwrt
-        echo "开始编译 PassWall 模块软件包，效果等同于 menuconfig 中选择 M 后生成安装包"
+        echo "开始定向编译 PassWall 模块软件包，避免触发 package/kernel/linux 全局编译"
+
+        compile_target() {
+          local dir="$1"
+          [ -n "$dir" ] || return 0
+          if [ ! -d "$dir" ]; then
+            echo "跳过不存在的目录：$dir"
+            return 0
+          fi
+
+          echo "============================================================"
+          echo "编译目标：$dir/compile"
+          echo "============================================================"
+
+          make "$dir/compile" -j$(($(nproc) * 3 / 2))
+          local ret=$?
+          if [ "$ret" -ne 0 ]; then
+            echo "并行编译 $dir 失败，使用 -j1 V=s 重试"
+            make "$dir/compile" -j1 V=s
+            ret=$?
+          fi
+          return "$ret"
+        }
 
         set +e
-        make package/compile -j$(($(nproc) * 3 / 2))
-        RET=$?
+        FAILED=0
 
-        if [ "$RET" -ne 0 ]; then
-          echo "============================================================"
-          echo "并行编译失败，开始使用 -j1 V=s 重新编译以输出详细错误"
-          echo "============================================================"
-          make package/compile -j1 V=s
-          RET=$?
+        # feeds 中没有被方法2替换、但你选择为 M 的 PassWall 相关包
+        for dir in \
+          package/feeds/packages/shadowsocks-libev \
+          package/feeds/packages/haproxy; do
+          compile_target "$dir" || FAILED=1
+        done
+
+        # 方法2拉取的 PassWall 官方核心库目录
+        if [ -d package/passwall-packages ]; then
+          find package/passwall-packages -name Makefile -printf '%h\n' | sort -u > /tmp/passwall-package-dirs.txt
+          while IFS= read -r dir; do
+            compile_target "$dir" || FAILED=1
+          done < /tmp/passwall-package-dirs.txt
         fi
 
-        if [ "$RET" -ne 0 ]; then
+        # 方法2拉取的 PassWall LuCI 目录
+        if [ -d package/passwall-luci ]; then
+          find package/passwall-luci -name Makefile -printf '%h\n' | sort -u > /tmp/passwall-luci-dirs.txt
+          while IFS= read -r dir; do
+            compile_target "$dir" || FAILED=1
+          done < /tmp/passwall-luci-dirs.txt
+        fi
+
+        if [ "$FAILED" -ne 0 ]; then
           echo "============================================================"
-          echo "PassWall 模块包编译失败，输出 OpenWrt 日志目录中的关键错误"
+          echo "PassWall 定向模块包编译失败，输出 OpenWrt 日志目录中的关键错误"
           echo "============================================================"
 
           if [ -d logs ]; then
@@ -212,7 +248,7 @@ jobs:
             echo "没有找到 openwrt/logs 目录。"
           fi
 
-          exit "$RET"
+          exit 1
         fi
 
     - name: Upload build logs on failure
