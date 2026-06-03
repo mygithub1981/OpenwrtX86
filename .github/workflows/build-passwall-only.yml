@@ -116,8 +116,6 @@ jobs:
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Haproxy
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy
-        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Libev_Client
-        check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Libev_Server
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs
         check_y CONFIG_PACKAGE_luci-app-passwall_INCLUDE_SingBox
