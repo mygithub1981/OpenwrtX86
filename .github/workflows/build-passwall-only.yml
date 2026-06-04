@@ -82,11 +82,15 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Prepare OpenWrt tools and toolchain
+    - name: Prepare OpenWrt tools, toolchain and target kernel
       run: |
         cd openwrt
         make tools/install -j$(($(nproc) * 3 / 2)) || make tools/install -j1 V=s
         make toolchain/install -j$(($(nproc) * 3 / 2)) || make toolchain/install -j1 V=s
+        echo "准备 target/linux，供 fw4/nftables 相关 kmod 依赖使用"
+        make target/linux/compile -j$(($(nproc) * 3 / 2)) || make target/linux/compile -j1 V=s
+        echo "预编译 package/kernel/linux，避免后续 PassWall 编译阶段突然失败"
+        make package/kernel/linux/compile -j$(($(nproc) * 3 / 2)) || make package/kernel/linux/compile -j1 V=s
 
     - name: Compile PassWall module packages
       run: |
