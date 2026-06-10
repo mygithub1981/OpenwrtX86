@@ -164,18 +164,35 @@ jobs:
         git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
 
         # 引入 ImmortalWrt 的 LuCI 插件：timewol / autoreboot / zerotier
-        rm -rf package/immortalwrt-luci
-        git clone --depth 1 --filter=blob:none --sparse https://github.com/immortalwrt/luci package/immortalwrt-luci
-        cd package/immortalwrt-luci
+        # 只取应用目录，不引入 ImmortalWrt 的 luci.mk，避免和官方 OpenWrt 25.12 的 LuCI 构建系统冲突
+        rm -rf /tmp/immortalwrt-luci
+        git clone --depth 1 --filter=blob:none --sparse https://github.com/immortalwrt/luci /tmp/immortalwrt-luci
+        cd /tmp/immortalwrt-luci
         git sparse-checkout set --no-cone \
-          /luci.mk \
           /applications/luci-app-timewol/** \
           /applications/luci-app-autoreboot/** \
           /applications/luci-app-zerotier/**
-        cd ../..
-        
-        rm -rf tmp/
+        cd "$GITHUB_WORKSPACE/openwrt"
 
+        rm -rf feeds/luci/applications/luci-app-timewol
+        rm -rf feeds/luci/applications/luci-app-autoreboot
+        rm -rf feeds/luci/applications/luci-app-zerotier
+
+        cp -a /tmp/immortalwrt-luci/applications/luci-app-timewol feeds/luci/applications/
+        cp -a /tmp/immortalwrt-luci/applications/luci-app-autoreboot feeds/luci/applications/
+        cp -a /tmp/immortalwrt-luci/applications/luci-app-zerotier feeds/luci/applications/
+
+        # 重新安装 feeds
+        ./scripts/feeds install -a
+
+        # 手动强制建立软链接，绕过 feeds index 缓存未更新的问题
+        mkdir -p package/feeds/luci
+        ln -sf ../../../feeds/luci/applications/luci-app-timewol package/feeds/luci/
+        ln -sf ../../../feeds/luci/applications/luci-app-autoreboot package/feeds/luci/
+        ln -sf ../../../feeds/luci/applications/luci-app-zerotier package/feeds/luci/
+
+        rm -rf tmp/
+        
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
