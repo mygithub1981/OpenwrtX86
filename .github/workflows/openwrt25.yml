@@ -95,8 +95,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo -E apt-get -qq update
-        sudo -E apt-get -qq full-upgrade
-        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+        sudo -E apt-get -qq install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
         bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext \
         gcc-multilib g++-multilib git gnutls-dev gperf haveged help2man intltool \
         lib32gcc-s1 libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev \
