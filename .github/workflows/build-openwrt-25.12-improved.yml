@@ -1,4 +1,4 @@
-name: Build openwrt 25.12
+name: Build openwrt 25.12 improvedbygpt
 
 on:
   repository_dispatch:
