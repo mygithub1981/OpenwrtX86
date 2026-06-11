@@ -178,6 +178,11 @@ jobs:
         cp -a /tmp/immortalwrt-luci/applications/luci-app-autoreboot package/immortalwrt-apps/
         cp -a /tmp/immortalwrt-luci/applications/luci-app-zerotier package/immortalwrt-apps/
 
+        # 关键修复：把原来的相对路径 ../../luci.mk 改成 feeds/luci/luci.mk
+        for app in luci-app-timewol luci-app-autoreboot luci-app-zerotier; do
+          sed -i 's#include ../../luci.mk#include $(TOPDIR)/feeds/luci/luci.mk#g' package/immortalwrt-apps/$app/Makefile
+        done
+        
         rm -rf tmp/
         
     - name: Load custom configuration
