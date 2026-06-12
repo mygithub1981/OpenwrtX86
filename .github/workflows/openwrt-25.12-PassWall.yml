@@ -35,6 +35,8 @@ jobs:
         run: |
           set -e
 
+          echo "SDK_BASE_URL=$SDK_BASE_URL"
+
           SDK_FILE="$(curl -fsSL "$SDK_BASE_URL/" \
             | grep -oE 'openwrt-sdk-[^"]+Linux-x86_64\.tar\.(zst|xz)' \
             | head -n 1)"
@@ -56,24 +58,29 @@ jobs:
         run: |
           set -e
 
-          cat >> feeds.conf.default <<'EOF'
+          # 放在 feeds.conf.default 顶部，让 PassWall feed 优先级高于官方 packages feed
+          sed -i '1i src-git passwall_luci https://github.com/Openwrt-Passwall/openwrt-passwall.git;main' feeds.conf.default
+          sed -i '1i src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main' feeds.conf.default
 
-          # PassWall official feeds
-          src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main
-          src-git passwall_luci https://github.com/Openwrt-Passwall/openwrt-passwall.git;main
-          EOF
+          echo "===== feeds.conf.default ====="
+          cat feeds.conf.default
 
           ./scripts/feeds update -a
 
-      - name: Remove conflicting official packages before install feeds
+      - name: Remove conflicting packages and shadowsocksr-libev
         working-directory: openwrt-sdk
         run: |
           set -e
 
-          rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
+          # 删除 OpenWrt 官方 feeds 里可能和 PassWall feed 冲突的包
+          rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 
+          # 删除旧 luci-app-passwall
           rm -rf feeds/luci/applications/luci-app-passwall
           rm -rf feeds/luci/applications/luci-app-passwall2
+
+          # 按你的要求：不编译 shadowsocksr-libev
+          rm -rf feeds/passwall_packages/shadowsocksr-libev
 
           ./scripts/feeds install -a
 
@@ -86,58 +93,88 @@ jobs:
 
           touch .config
 
-          cat >> .config <<'EOF'
-          CONFIG_PACKAGE_luci-app-passwall=m
-          CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=m
+          # PassWall 主程序和中文语言包
+          ./scripts/config -m PACKAGE_luci-app-passwall
+          ./scripts/config -m PACKAGE_luci-i18n-passwall-zh-cn
 
-          CONFIG_PACKAGE_xray-core=m
-          CONFIG_PACKAGE_sing-box=m
-          CONFIG_PACKAGE_v2ray-geodata=m
-          CONFIG_PACKAGE_geoview=m
-          CONFIG_PACKAGE_chinadns-ng=m
-          CONFIG_PACKAGE_dns2socks=m
-          CONFIG_PACKAGE_hysteria=m
-          CONFIG_PACKAGE_ipt2socks=m
-          CONFIG_PACKAGE_microsocks=m
-          CONFIG_PACKAGE_naiveproxy=m
-          CONFIG_PACKAGE_shadow-tls=m
-          CONFIG_PACKAGE_shadowsocks-rust=m
-          CONFIG_PACKAGE_simple-obfs=m
-          CONFIG_PACKAGE_tcping=m
-          CONFIG_PACKAGE_tuic-client=m
-          CONFIG_PACKAGE_v2ray-plugin=m
-          CONFIG_PACKAGE_xray-plugin=m
+          # OpenWrt 25.12 默认 fw4，优先 nftables 透明代理
+          ./scripts/config --disable PACKAGE_luci-app-passwall_Iptables_Transparent_Proxy
+          ./scripts/config --enable PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy
 
-          # 不编译 shadowsocksr-libev
-          # CONFIG_PACKAGE_shadowsocksr-libev is not set
-          EOF
+          # 常用核心组件
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Geoview
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Hysteria
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Shadow_TLS
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Simple_Obfs
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_SingBox
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_V2ray_Plugin
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Xray
+          ./scripts/config --enable PACKAGE_luci-app-passwall_INCLUDE_Xray_Plugin
+
+          # 按你的要求：禁用 SSR / shadowsocksr-libev
+          ./scripts/config --disable PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Client
+          ./scripts/config --disable PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Server
+          ./scripts/config --disable PACKAGE_shadowsocksr-libev-ssr-check
+          ./scripts/config --disable PACKAGE_shadowsocksr-libev-ssr-local
+          ./scripts/config --disable PACKAGE_shadowsocksr-libev-ssr-nat
+          ./scripts/config --disable PACKAGE_shadowsocksr-libev-ssr-redir
+          ./scripts/config --disable PACKAGE_shadowsocksr-libev-ssr-server
 
           make defconfig
 
           echo "===== PassWall selected config ====="
-          grep -E 'CONFIG_PACKAGE_(luci-app-passwall|luci-i18n-passwall|xray-core|sing-box|v2ray-geodata|geoview|chinadns-ng|dns2socks|hysteria|ipt2socks|microsocks|naiveproxy|shadow-tls|shadowsocks-rust|shadowsocksr-libev|simple-obfs|tcping|tuic-client|v2ray-plugin|xray-plugin)' .config || true
+          grep -E 'CONFIG_PACKAGE_(luci-app-passwall|luci-i18n-passwall|xray|sing-box|v2ray|geoview|chinadns|dns2socks|hysteria|ipt2socks|microsocks|naiveproxy|shadow-tls|shadowsocks|simple-obfs|tcping)' .config || true
+
+          echo "===== Check shadowsocksr disabled ====="
+          grep -i 'shadowsocksr' .config || true
 
       - name: Download package sources
         working-directory: openwrt-sdk
         run: |
           set -e
-          make download -j$(nproc) V=s
+          make download -j$(nproc) V=s || make download V=s
 
-      - name: Build PassWall dependency packages
+      - name: Build PassWall packages one by one
         working-directory: openwrt-sdk
         run: |
           set -e
 
-          make package/feeds/passwall_packages/compile -j$(nproc) V=s || \
-          make package/feeds/passwall_packages/compile V=s
+          compile_pkg() {
+            PKG_PATH="$1"
 
-      - name: Build luci-app-passwall
-        working-directory: openwrt-sdk
-        run: |
-          set -e
+            if [ -f "$PKG_PATH/Makefile" ]; then
+              echo "===== Building $PKG_PATH ====="
+              make "$PKG_PATH/compile" -j$(nproc) V=s || make "$PKG_PATH/compile" V=s
+            else
+              echo "===== Skip missing package: $PKG_PATH ====="
+            fi
+          }
 
-          make package/feeds/passwall_luci/luci-app-passwall/compile -j$(nproc) V=s || \
-          make package/feeds/passwall_luci/luci-app-passwall/compile V=s
+          # 这里不能写 package/feeds/passwall_packages/compile
+          # 必须逐个具体包目录编译
+
+          compile_pkg package/feeds/passwall_packages/chinadns-ng
+          compile_pkg package/feeds/passwall_packages/dns2socks
+          compile_pkg package/feeds/passwall_packages/geoview
+          compile_pkg package/feeds/passwall_packages/hysteria
+          compile_pkg package/feeds/passwall_packages/ipt2socks
+          compile_pkg package/feeds/passwall_packages/microsocks
+          compile_pkg package/feeds/passwall_packages/naiveproxy
+          compile_pkg package/feeds/passwall_packages/shadow-tls
+          compile_pkg package/feeds/passwall_packages/shadowsocks-rust
+          compile_pkg package/feeds/passwall_packages/simple-obfs
+          compile_pkg package/feeds/passwall_packages/sing-box
+          compile_pkg package/feeds/passwall_packages/tcping
+          compile_pkg package/feeds/passwall_packages/v2ray-geodata
+          compile_pkg package/feeds/passwall_packages/v2ray-plugin
+          compile_pkg package/feeds/passwall_packages/xray-core
+          compile_pkg package/feeds/passwall_packages/xray-plugin
+
+          # 最后编译 PassWall LuCI
+          compile_pkg package/feeds/passwall_luci/luci-app-passwall
 
       - name: Generate package index
         working-directory: openwrt-sdk
@@ -150,35 +187,44 @@ jobs:
         run: |
           set -e
 
-          mkdir -p ../artifact/passwall-apk
+          mkdir -p ../artifact/passwall-apk/packages
 
           echo "===== all built apk packages ====="
           find bin/packages -type f -name "*.apk" | sort || true
 
-          for feed in passwall_luci passwall_packages; do
-            if [ -d "bin/packages/${ARCH}/${feed}" ]; then
-              mkdir -p "../artifact/passwall-apk/${feed}"
-              cp -av "bin/packages/${ARCH}/${feed}/"* "../artifact/passwall-apk/${feed}/" || true
-            fi
-          done
+          # 复制所有生成的 apk，但排除 shadowsocksr
+          while IFS= read -r apk; do
+            case "$apk" in
+              *shadowsocksr*)
+                echo "Skip SSR package: $apk"
+                ;;
+              *)
+                subdir="$(dirname "$apk" | sed "s|^bin/packages/${ARCH}/||")"
+                mkdir -p "../artifact/passwall-apk/packages/$subdir"
+                cp -av "$apk" "../artifact/passwall-apk/packages/$subdir/"
+                ;;
+            esac
+          done < <(find "bin/packages/${ARCH}" -type f -name "*.apk" | sort)
 
           cat > ../artifact/passwall-apk/README.txt <<'EOF'
           OpenWrt 25.12 x86_64 PassWall APK packages
 
-          上传到路由器示例：
+          上传到路由器：
 
             scp -r passwall-apk root@192.168.50.1:/tmp/
 
           SSH 进入路由器后执行：
 
             cd /tmp/passwall-apk
-            apk add --allow-untrusted passwall_packages/*.apk passwall_luci/*.apk
+            find packages -name "*.apk" -print0 | xargs -0 apk add --allow-untrusted
             /etc/init.d/passwall restart
 
           注意：
           1. 这是 OpenWrt 25.12-SNAPSHOT / x86_64 的 APK 包。
-          2. 本工作流没有编译 shadowsocksr-libev。
-          3. 如果安装时提示依赖缺失，先执行 apk update。
+          2. 本工作流已经排除 shadowsocksr-libev。
+          3. 如果安装时提示依赖缺失，先执行：
+               apk update
+             然后再重新执行安装命令。
           EOF
 
           cd ../artifact
