@@ -304,6 +304,41 @@ jobs:
 
         chmod +x files/sbin/cpuinfo
 
+        # 4.1.添加 /sbin/tempinfo，供 getTempInfo 调用显示 CPU 温度
+        cat > files/sbin/tempinfo <<'EOF'
+        #!/bin/sh
+
+        for input in /sys/class/hwmon/hwmon*/temp*_input; do
+            [ -e "$input" ] || continue
+
+            name="$(cat "$(dirname "$input")/name" 2>/dev/null)"
+            label="$(cat "${input%_input}_label" 2>/dev/null)"
+
+            echo "$name $label" | grep -qiE 'coretemp.*Package|Package id|x86_pkg_temp|cpu' || continue
+
+            val="$(cat "$input" 2>/dev/null)"
+            [ -n "$val" ] && awk -v v="$val" 'BEGIN {printf "%.1f°C\n", v / 1000}'
+            exit 0
+        done
+
+        for input in /sys/class/hwmon/hwmon*/temp*_input; do
+            [ -e "$input" ] || continue
+            val="$(cat "$input" 2>/dev/null)"
+            [ -n "$val" ] && awk -v v="$val" 'BEGIN {printf "%.1f°C\n", v / 1000}'
+            exit 0
+        done
+
+        for input in /sys/class/thermal/thermal_zone*/temp; do
+            [ -e "$input" ] || continue
+            val="$(cat "$input" 2>/dev/null)"
+            [ -n "$val" ] && awk -v v="$val" 'BEGIN {printf "%.1f°C\n", v / 1000}'
+            exit 0
+        done
+        EOF
+
+        chmod +x files/sbin/tempinfo
+
+
         ./scripts/feeds install -a
 
         # 5.删除冲突包
