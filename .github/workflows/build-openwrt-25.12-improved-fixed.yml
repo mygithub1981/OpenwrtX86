@@ -282,7 +282,7 @@ jobs:
         find bin/packages -type f \( -name "*.apk" -o -name "*.ipk" \) | sort || true
 
         find bin/packages -type f \( -name "*.apk" -o -name "*.ipk" \) \
-          | grep -Ei '(passwall|xray|sing-box|hysteria|v2ray|geodata|geoip|geosite|chinadns|dns2socks|ipt2socks|microsocks|naiveproxy|shadowsocks|simple-obfs|tcping|haproxy|geoview)' \
+          | grep -Ei '(passwall|xray|sing-box|hysteria|v2ray|geodata|geoip|geosite|chinadns|dns2socks|ipt2socks|microsocks|naiveproxy|shadowsocks|simple-obfs|tcping|haproxy|geoview|shadow-tls|tuic)' \
           | while read -r pkg; do
               cp -v "$pkg" "$GITHUB_WORKSPACE/passwall-packages/"
             done
