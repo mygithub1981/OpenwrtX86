@@ -282,8 +282,7 @@ jobs:
         find bin/packages -type f \( -name "*.apk" -o -name "*.ipk" \) | sort || true
 
         find bin/packages -type f \( -name "*.apk" -o -name "*.ipk" \) \
-          | grep -Ei '(passwall|xray|sing-box|hysteria|v2ray|geodata|geoip|geosite|chinadns|dns2socks|ipt2socks|microsocks|naiveproxy|shadowsocks|simple-obfs|tcping|haproxy|geoview|shadow-tls|tuic)' \
-          | grep -Eiv '(shadowsocksr|ssr)' \
+          | grep -Ei '(passwall|xray|sing-box|hysteria|v2ray|geodata|geoip|geosite|chinadns|dns2socks|ipt2socks|microsocks|naiveproxy|shadowsocks|simple-obfs|tcping|haproxy|geoview)' \
           | while read -r pkg; do
               cp -v "$pkg" "$GITHUB_WORKSPACE/passwall-packages/"
             done
@@ -306,9 +305,8 @@ jobs:
         说明：
         1. OpenWrt 25.12 使用 apk 包。
         2. 本目录只收集 PassWall 相关升级包。
-        3. 已排除 shadowsocksr / ssr 相关包。
-        4. 这些包最好只用于同源码、同架构、同版本 OpenWrt 25.12 x86_64 固件。
-        5. 如果安装时报依赖缺失，先执行 apk update。
+        3. 这些包最好只用于同源码、同架构、同版本 OpenWrt 25.12 x86_64 固件。
+        4. 如果安装时报依赖缺失，先执行 apk update。
         EOF
 
         echo "已收集的软件包："
