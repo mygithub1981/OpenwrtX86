@@ -1,5 +1,4 @@
-name: Build openwrt 25.12 improvedbygpt
-
+name: ceshi
 on:
   repository_dispatch:
   workflow_dispatch:
@@ -13,7 +12,7 @@ env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-25.12
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: openwrt25.config
+  CONFIG_FILE: openwrt25t.config
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -127,12 +126,187 @@ jobs:
     - name: 运行 Passwall 官方替换逻辑 (方法 2)
       run: |
         cd openwrt
-        # 1.更新并安装原有 feeds
-        # 更新 feeds
+
+        # 1.更新 feeds
         ./scripts/feeds update -a
+
+        # 2.移植 ImmortalWrt 状态-概况-系统卡片
+        IMM_LUCI_BRANCH="openwrt-25.12"
+        STATUS_FILE="feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js"
+
+        curl -fsSL "https://raw.githubusercontent.com/immortalwrt/luci/${IMM_LUCI_BRANCH}/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js" \
+          -o "$STATUS_FILE" || \
+        curl -fsSL "https://raw.githubusercontent.com/immortalwrt/luci/master/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/10_system.js" \
+          -o "$STATUS_FILE"
+
+        # 3.给官方 luci RPC 后端补 ImmortalWrt 的 CPU 信息方法
+        python3 <<'PY'
+        from pathlib import Path
+
+        p = Path("feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci")
+        s = p.read_text()
+
+        if "getCPUInfo:" not in s:
+            block = r"""
+        getCPUBench: {
+            call: function() {
+                return { cpubench: readfile('/etc/bench.log') || '' };
+            }
+        },
+
+        getCPUInfo: {
+            call: function() {
+                if (!access('/sbin/cpuinfo'))
+                    return {};
+
+                const fd = popen('/sbin/cpuinfo');
+
+                if (fd) {
+                    let cpuinfo = fd.read('all');
+
+                    if (!cpuinfo)
+                        cpuinfo = '?';
+
+                    fd.close();
+
+                    return { cpuinfo: cpuinfo };
+                }
+                else {
+                    return { cpuinfo: error() };
+                }
+            }
+        },
+
+        getCPUUsage: {
+            call: function() {
+                const fd = popen('top -n1 | awk \'/^CPU/ {printf("%d%%", 100 - $8)}\'');
+
+                if (fd) {
+                    let cpuusage = fd.read('all');
+
+                    if (!cpuusage)
+                        cpuusage = '?';
+
+                    fd.close();
+
+                    return { cpuusage: cpuusage };
+                }
+                else {
+                    return { cpuusage: error() };
+                }
+            }
+        },
+
+        getTempInfo: {
+            call: function() {
+                if (!access('/sbin/tempinfo'))
+                    return {};
+
+                const fd = popen('/sbin/tempinfo');
+
+                if (fd) {
+                    let tempinfo = fd.read('all');
+
+                    if (!tempinfo)
+                        tempinfo = '?';
+
+                    fd.close();
+
+                    return { tempinfo: tempinfo };
+                }
+                else {
+                    return { tempinfo: error() };
+                }
+            }
+        }
+        """
+
+            marker = "\n};\n\nreturn { luci: methods };"
+
+            if marker not in s:
+                marker = "\n}; return { luci: methods };"
+
+            if marker not in s:
+                raise SystemExit("没有找到 luci RPC 文件结尾标记，未修改。")
+
+            s = s.replace(marker, ",\n" + block.strip() + marker, 1)
+            p.write_text(s)
+        PY
+
+        # 4.添加 /sbin/cpuinfo，让“架构”栏显示 CPU 型号、核心线程、频率、温度
+        mkdir -p files/sbin
+
+        cat > files/sbin/cpuinfo <<'EOF'
+        #!/bin/sh
+
+        model="$(awk -F': ' '/model name/ {print $2; exit}' /proc/cpuinfo | sed 's/[[:space:]]*@.*$//')"
+        [ -z "$model" ] && model="$(awk -F': ' '/Hardware|Processor/ {print $2; exit}' /proc/cpuinfo)"
+        [ -z "$model" ] && model="Unknown CPU"
+
+        threads="$(grep -c '^processor' /proc/cpuinfo 2>/dev/null)"
+        [ -z "$threads" ] || [ "$threads" = "0" ] && threads=1
+
+        cores="$(awk -F': ' '
+        /^physical id/ {p=$2}
+        /^core id/ {c=$2; if (p != "") a[p ":" c]=1}
+        END {for (i in a) n++; print n}
+        ' /proc/cpuinfo 2>/dev/null)"
+
+        [ -z "$cores" ] || [ "$cores" = "0" ] && cores="$threads"
+
+        freq="$(awk '
+        BEGIN {n=0; sum=0}
+        {sum += $1; n++}
+        END {if (n > 0) printf "%.3fMHz", sum / n / 1000}
+        ' /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_cur_freq 2>/dev/null)"
+
+        [ -z "$freq" ] && freq="$(awk -F': ' '
+        /cpu MHz/ {sum += $2; n++}
+        END {if (n > 0) printf "%.3fMHz", sum / n}
+        ' /proc/cpuinfo 2>/dev/null)"
+
+        temp=""
+
+        for input in /sys/class/hwmon/hwmon*/temp*_input; do
+            [ -e "$input" ] || continue
+
+            name="$(cat "$(dirname "$input")/name" 2>/dev/null)"
+            label="$(cat "${input%_input}_label" 2>/dev/null)"
+
+            echo "$name $label" | grep -qiE 'coretemp.*Package|Package id|x86_pkg_temp' || continue
+
+            val="$(cat "$input" 2>/dev/null)"
+            [ -n "$val" ] && temp="$(awk -v v="$val" 'BEGIN {printf "%.1f°C", v / 1000}')"
+            break
+        done
+
+        if [ -z "$temp" ]; then
+            for input in /sys/class/hwmon/hwmon*/temp*_input; do
+                [ -e "$input" ] || continue
+                val="$(cat "$input" 2>/dev/null)"
+                [ -n "$val" ] && temp="$(awk -v v="$val" 'BEGIN {printf "%.1f°C", v / 1000}')"
+                [ -n "$temp" ] && break
+            done
+        fi
+
+        extra=""
+
+        if [ -n "$freq" ] && [ -n "$temp" ]; then
+            extra=" ($freq, $temp)"
+        elif [ -n "$freq" ]; then
+            extra=" ($freq)"
+        elif [ -n "$temp" ]; then
+            extra=" ($temp)"
+        fi
+
+        printf "%s x %sC %sT%s\n" "$model" "$cores" "$threads" "$extra"
+        EOF
+
+        chmod +x files/sbin/cpuinfo
+
         ./scripts/feeds install -a
-        
-        # 2.删除冲突包
+
+        # 5.删除冲突包
         rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
@@ -143,17 +317,16 @@ jobs:
         rm -rf feeds/luci/applications/luci-app-argon-config
         rm -rf feeds/luci/themes/luci-theme-argon
 
-        # 3.清理 package/feeds/ 下产生的无效软链接（极度推荐！）
-        # find 命令结合 -xtype l 会自动找出并删除所有指向空目标的死链接
+        # 6.清理 package/feeds/ 下产生的无效软链接
         find package/feeds/ -type l -xtype l -delete
 
-        # 4.删除 LEDE 内置重复包（使用 xargs -r 防止空结果报错）
+        # 7.删除 LEDE 内置重复包（使用 xargs -r 防止空结果报错）
         find package/ -type d -name "*passwall*" | xargs -r rm -rf
         find package/ -type d -name "*argon*" | xargs -r rm -rf
         find package/ -type d -name "*lucky*" | xargs -r rm -rf
         find package/ -type d -name "*ddns-go*" | xargs -r rm -rf
 
-        # 5.拉取最新版
+        # 8.拉取最新版
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall2 package/passwall2-luci
@@ -162,11 +335,11 @@ jobs:
         git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
         git clone --depth 1 https://github.com/jerrykuku/luci-app-argon-config.git package/luci-app-argon-config
 
-        # 6.引入 ImmortalWrt 的 LuCI 插件
+        # 9.引入 ImmortalWrt 的 LuCI 插件
         rm -rf /tmp/immortalwrt-luci
         git clone --depth 1 --filter=blob:none --sparse https://github.com/immortalwrt/luci /tmp/immortalwrt-luci
         cd /tmp/immortalwrt-luci
-        
+
         # 使用更推荐的 cone 模式切出目录
         git sparse-checkout set applications/luci-app-timewol applications/luci-app-autoreboot applications/luci-app-zerotier
         cd "$GITHUB_WORKSPACE/openwrt"
@@ -184,12 +357,16 @@ jobs:
           echo "检查 $app Makefile 里的 luci.mk 引用："
           grep -n "luci.mk" package/immortalwrt-apps/$app/Makefile
         done
-        
+
         rm -rf tmp/
-        
+
     - name: Load custom configuration
       run: |
-        [ -e files ] && mv files openwrt/files
+        if [ -e files ]; then
+          mkdir -p openwrt/files
+          cp -a files/. openwrt/files/
+        fi
+
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         chmod +x $DIY_P2_SH
         cd openwrt
@@ -203,7 +380,7 @@ jobs:
         项目: ${{ github.repository }}
         请立刻点击下方链接进入 Actions 日志复制 SSH 运行命令：
         [点击进入日志界面](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-        
+
         curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
           -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
           -d "parse_mode=Markdown" \
@@ -270,6 +447,60 @@ jobs:
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
+    - name: Collect PassWall packages from firmware build
+      id: collect_passwall_packages
+      if: steps.compile.outputs.status == 'success'
+      run: |
+        mkdir -p passwall-packages
+        cd openwrt
+
+        echo "从完整 OpenWrt 固件编译结果中收集 PassWall 相关安装包"
+        echo "当前 bin/packages 中的软件包："
+        find bin/packages -type f \( -name "*.apk" -o -name "*.ipk" \) | sort || true
+
+        find bin/packages -type f \( -name "*.apk" -o -name "*.ipk" \) \
+          | grep -Ei '(passwall|xray|sing-box|hysteria|v2ray|geodata|geoip|geosite|chinadns|dns2socks|ipt2socks|microsocks|naiveproxy|shadowsocks|simple-obfs|tcping|haproxy|geoview|shadow-tls|tuic)' \
+          | while read -r pkg; do
+              cp -v "$pkg" "$GITHUB_WORKSPACE/passwall-packages/"
+            done
+
+        cat > "$GITHUB_WORKSPACE/passwall-packages/README.txt" <<'EOF'
+        OpenWrt 25.12 PassWall 升级包
+
+        这些软件包来自本次完整 OpenWrt 固件编译结果。
+
+        上传到路由器：
+
+          scp -r passwall-packages root@192.168.50.1:/tmp/
+
+        SSH 进入路由器后执行：
+
+          cd /tmp/passwall-packages
+          apk add --allow-untrusted *.apk
+          /etc/init.d/passwall restart
+
+        说明：
+        1. OpenWrt 25.12 使用 apk 包。
+        2. 本目录只收集 PassWall 相关升级包。
+        3. 这些包最好只用于同源码、同架构、同版本 OpenWrt 25.12 x86_64 固件。
+        4. 如果安装时报依赖缺失，先执行 apk update。
+        EOF
+
+        echo "已收集的软件包："
+        ls -lh "$GITHUB_WORKSPACE/passwall-packages" || true
+
+        if [ -z "$(find "$GITHUB_WORKSPACE/passwall-packages" -type f \( -name "*.apk" -o -name "*.ipk" \) | head -n 1)" ]; then
+          echo "❌ 没有找到 PassWall 相关安装包"
+          exit 1
+        fi
+
+    - name: Upload PassWall packages
+      uses: actions/upload-artifact@v6
+      if: steps.compile.outputs.status == 'success'
+      with:
+        name: PassWall_packages${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: passwall-packages
+
     - name: Check space usage
       if: (!cancelled())
       run: df -hT
@@ -305,7 +536,7 @@ jobs:
         *状态:* ${STATUS}
         *时间:* $(date +'%Y-%m-%d %H:%M:%S')
         *链接:* [点击查看详情](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-        
+
         curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
           -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
           -d "parse_mode=Markdown" \
