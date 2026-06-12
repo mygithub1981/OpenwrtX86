@@ -1,4 +1,4 @@
-name: Build openwrt 25.12 improvedbygpt
+name: Build openwrt 25.12 improvedbygpt and Export PassWall Packages
 
 on:
   repository_dispatch:
