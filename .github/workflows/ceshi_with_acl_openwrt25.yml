@@ -1,4 +1,4 @@
-name: ceshiacl
+name: openwrt25.12-acl-expert-passwall
 on:
   repository_dispatch:
   workflow_dispatch:
