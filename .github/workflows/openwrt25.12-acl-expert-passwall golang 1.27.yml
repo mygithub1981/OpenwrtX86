@@ -1,4 +1,4 @@
-name: openwrt25.12-acl-expert-passwall
+name: openwrt25.12-acl-expert-passwall go lang 1.7
 on:
   repository_dispatch:
   workflow_dispatch:
