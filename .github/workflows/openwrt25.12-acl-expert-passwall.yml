@@ -113,11 +113,6 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo chown -R "$USER:$USER" "$GITHUB_WORKSPACE"
 
-    - name: Setup Go Toolchain
-      uses: actions/setup-go@v5
-      with:
-        go-version: '>=1.27'
-
     - name: Clone source code
       run: |
         git clone -b $REPO_BRANCH --single-branch --filter=blob:none $REPO_URL  openwrt
@@ -411,7 +406,6 @@ jobs:
         cp -a /tmp/immortalwrt-luci/applications/luci-app-zerotier package/immortalwrt-apps/
 
         # 关键修复：把 ImmortalWrt 插件 Makefile 里的相对 luci.mk 改成官方 OpenWrt feeds/luci/luci.mk
-        # 同时打印结果，方便在 Actions 日志里确认替换是否成功
         for app in luci-app-timewol luci-app-autoreboot luci-app-zerotier; do
           sed -i -E 's#^include[[:space:]]+(\.\./)+luci\.mk#include $(TOPDIR)/feeds/luci/luci.mk#g' package/immortalwrt-apps/$app/Makefile
           echo "检查 $app Makefile 里的 luci.mk 引用："
@@ -419,6 +413,19 @@ jobs:
         done
 
         rm -rf tmp/
+
+    - name: Fix Go toolchain restriction in OpenWrt
+      run: |
+        cd openwrt
+        GOLANG_MK=$(find . -path "*/lang/golang/golang.mk" | head -n 1)
+        if [ -n "$GOLANG_MK" ] && [ -f "$GOLANG_MK" ]; then
+          echo "找到 golang.mk 路径: $GOLANG_MK"
+          sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g' "$GOLANG_MK"
+          echo "✅ 已成功将 golang.mk 中的 GOTOOLCHAIN 限制修改为 auto"
+        else
+          echo "⚠️ 未找到 golang.mk，尝试全局搜索替换..."
+          find . -name "golang.mk" -exec sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g' {} +
+        fi
 
     - name: Load custom configuration
       run: |
@@ -435,7 +442,6 @@ jobs:
     - name: 强制推送 SSH 连接指令到 Telegram
       if: github.event.inputs.ssh == 'true'
       run: |
-        # 即使 tmate 还没完全启动，我们也先发个预警，并在日志里抓取链接
         MSG="🚀 *SSH 调试模式已开启*
         项目: ${{ github.repository }}
         请立刻点击下方链接进入 Actions 日志复制 SSH 运行命令：
@@ -471,7 +477,6 @@ jobs:
           fi
         done
 
-        export GOTOOLCHAIN=auto
         make download -j$(($(nproc) * 3 / 2)) || make download -j1 V=s
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -482,7 +487,6 @@ jobs:
         cd openwrt
         echo -e "CPU $(nproc) thread"
         echo -e "$(($(nproc) * 3 / 2)) thread compile"
-        export GOTOOLCHAIN=auto
         make -j$(($(nproc) * 3 / 2)) || make -j1 || make -j1 V=s
 
         echo "检查最终固件 manifest 是否包含目标插件："
