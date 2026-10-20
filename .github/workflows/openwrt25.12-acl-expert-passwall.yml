@@ -414,18 +414,34 @@ jobs:
 
         rm -rf tmp/
 
-    - name: Fix Go toolchain restriction in OpenWrt
+    - name: Update Go toolchain for latest PassWall packages
       run: |
+        set -euxo pipefail
         cd openwrt
-        GOLANG_MK=$(find . -path "*/lang/golang/golang.mk" | head -n 1)
-        if [ -n "$GOLANG_MK" ] && [ -f "$GOLANG_MK" ]; then
-          echo "找到 golang.mk 路径: $GOLANG_MK"
-          sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g' "$GOLANG_MK"
-          echo "✅ 已成功将 golang.mk 中的 GOTOOLCHAIN 限制修改为 auto"
-        else
-          echo "⚠️ 未找到 golang.mk，尝试全局搜索替换..."
-          find . -name "golang.mk" -exec sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g' {} +
+
+        # OpenWrt 的 golang.mk 中 GOTOOLCHAIN=auto 只允许 Go 自动选择工具链，
+        # 并不会把 OpenWrt 自带的旧版 Go 编译器升级。因此同步 packages 主分支的
+        # golang 构建配方，避免 xray-core 等新版 Go 程序被旧工具链卡住。
+        rm -rf /tmp/openwrt-packages-golang
+        git clone --depth 1 --filter=blob:none --sparse \
+          https://github.com/openwrt/packages.git /tmp/openwrt-packages-golang
+        git -C /tmp/openwrt-packages-golang sparse-checkout set lang/golang
+
+        if [ ! -f /tmp/openwrt-packages-golang/lang/golang/Makefile ]; then
+          echo "ERROR: packages 主分支中未找到 lang/golang/Makefile"
+          exit 1
         fi
+
+        mkdir -p feeds/packages/lang
+        rm -rf feeds/packages/lang/golang
+        cp -a /tmp/openwrt-packages-golang/lang/golang feeds/packages/lang/golang
+
+        # 放宽工具链选择限制；若该版本配方中不存在此设置，则不报错。
+        find feeds/packages/lang/golang -type f -name '*.mk' -print0 |
+          xargs -0 -r sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g'
+
+        echo "Go package recipe being used:"
+        grep -R -nE 'GO_VERSION|PKG_VERSION|GOTOOLCHAIN' feeds/packages/lang/golang || true
 
     - name: Load custom configuration
       run: |
