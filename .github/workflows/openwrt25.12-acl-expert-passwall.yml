@@ -21,6 +21,7 @@ env:
   UPLOAD_WETRANSFER: false
   UPLOAD_RELEASE: false
   TZ: Asia/Shanghai
+  GOTOOLCHAIN: auto
 
 jobs:
   build:
@@ -111,6 +112,11 @@ jobs:
         /usr/local/share/powershell /usr/local/share/chromium /usr/local/lib/node_modules
         sudo timedatectl set-timezone "$TZ"
         sudo chown -R "$USER:$USER" "$GITHUB_WORKSPACE"
+
+    - name: Setup Go Toolchain
+      uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.27'
 
     - name: Clone source code
       run: |
@@ -359,8 +365,6 @@ jobs:
         }
         EOF
 
-
-
         ./scripts/feeds install -a
 
         # 5.删除冲突包
@@ -467,6 +471,7 @@ jobs:
           fi
         done
 
+        export GOTOOLCHAIN=auto
         make download -j$(($(nproc) * 3 / 2)) || make download -j1 V=s
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -477,6 +482,7 @@ jobs:
         cd openwrt
         echo -e "CPU $(nproc) thread"
         echo -e "$(($(nproc) * 3 / 2)) thread compile"
+        export GOTOOLCHAIN=auto
         make -j$(($(nproc) * 3 / 2)) || make -j1 || make -j1 V=s
 
         echo "检查最终固件 manifest 是否包含目标插件："
