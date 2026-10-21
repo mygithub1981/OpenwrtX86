@@ -427,11 +427,17 @@ jobs:
           https://github.com/openwrt/packages.git /tmp/openwrt-packages-golang
         git -C /tmp/openwrt-packages-golang sparse-checkout set lang/golang
 
-        if [ ! -f /tmp/openwrt-packages-golang/lang/golang/Makefile ]; then
-          echo "ERROR: packages 主分支中未找到 lang/golang/Makefile"
+        if [ ! -f /tmp/openwrt-packages-golang/lang/golang/golang/Makefile ] || \
+           [ ! -f /tmp/openwrt-packages-golang/lang/golang/golang-values.mk ]; then
+          echo "ERROR: 未找到 Go 配方文件"
+          find /tmp/openwrt-packages-golang/lang/golang -maxdepth 3 -type f | sort | head -n 80
           exit 1
         fi
 
+        echo "Upstream Go default version:"
+        grep -nE '^GO_DEFAULT_VERSION:=' \
+         /tmp/openwrt-packages-golang/lang/golang/golang-values.mk
+  
         mkdir -p feeds/packages/lang
         rm -rf feeds/packages/lang/golang
         cp -a /tmp/openwrt-packages-golang/lang/golang feeds/packages/lang/golang
