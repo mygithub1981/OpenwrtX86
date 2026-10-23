@@ -368,6 +368,7 @@ jobs:
         rm -rf feeds/luci/applications/luci-app-passwall
         rm -rf feeds/luci/applications/luci-app-passwall2
         rm -rf feeds/luci/applications/luci-app-ddns-go
+        rm -rf feeds/luci/applications/luci-app-smartdns
         rm -rf feeds/packages/net/ddns-go
         rm -rf feeds/luci/applications/luci-app-lucky
         rm -rf feeds/packages/net/lucky
@@ -382,6 +383,7 @@ jobs:
         find package/ -type d -name "*argon*" | xargs -r rm -rf
         find package/ -type d -name "*lucky*" | xargs -r rm -rf
         find package/ -type d -name "*ddns-go*" | xargs -r rm -rf
+        find package/ -type d -name "*smartdns*" | xargs -r rm -rf
 
         # 8.拉取最新版
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
@@ -432,6 +434,7 @@ jobs:
         git clone --depth 1 https://github.com/sirpdboy/luci-app-ddns-go.git package/ddns-go
         git clone --depth 1 https://github.com/gdy666/luci-app-lucky.git package/lucky
         git clone --depth 1 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
+        git clone --depth 1 https://github.com/pymumu/luci-app-smartdns.git package/luci-app-smartdns
 
         # 9.引入 ImmortalWrt 的 LuCI 插件
         rm -rf /tmp/immortalwrt-luci
