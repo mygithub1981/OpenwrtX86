@@ -115,7 +115,7 @@ jobs:
 
     # SmartDNS 的 smartdns-ui 构建需要 npm；必须在清理 runner 环境之后安装。
     - name: Setup Node.js and npm for SmartDNS UI
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version: '22'
         package-manager-cache: false
