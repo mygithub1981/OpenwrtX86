@@ -370,6 +370,7 @@ jobs:
         rm -rf feeds/packages/net/ddns-go
         rm -rf feeds/luci/applications/luci-app-lucky
         rm -rf feeds/packages/net/lucky
+        rm -rf feeds/luci/applications/luci-app-smartdns
         rm -rf feeds/luci/applications/luci-app-argon-config
         rm -rf feeds/luci/themes/luci-theme-argon
 
@@ -381,6 +382,7 @@ jobs:
         find package/ -type d -name "*argon*" | xargs -r rm -rf
         find package/ -type d -name "*lucky*" | xargs -r rm -rf
         find package/ -type d -name "*ddns-go*" | xargs -r rm -rf
+        find package/ -type d -name "*smartdns*" | xargs -r rm -rf
 
         # 8.拉取最新版
         git clone --depth 1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
