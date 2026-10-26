@@ -22,7 +22,16 @@
 # 自动查找 config_generate 文件并修改默认 IP
 find package/base-files/ -name config_generate -exec sed -i 's/192.168.1.1/192.168.50.252/g' {} +
 # 修改系统默认的 TCP 拥塞控制算法为 BBR
-sed -i '/net.ipv4.tcp_congestion_control/d' package/base-files/files/etc/sysctl.conf
-sed -i '/net.core.default_qdisc/d' package/base-files/files/etc/sysctl.conf
-echo "net.core.default_qdisc=fq" >> package/base-files/files/etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> package/base-files/files/etc/sysctl.conf
+
+# 设置系统默认队列规则、TCP 拥塞控制和 nlbwmon 接收缓冲区
+SYSCTL_CONF="package/base-files/files/etc/sysctl.conf"
+
+# 删除已有配置，避免重复或冲突
+sed -i '/^net\.ipv4\.tcp_congestion_control=/d' "$SYSCTL_CONF"
+sed -i '/^net\.core\.default_qdisc=/d' "$SYSCTL_CONF"
+sed -i '/^net\.core\.rmem_max=/d' "$SYSCTL_CONF"
+
+# 写入经过当前固件验证的配置
+echo "net.core.default_qdisc=fq_codel" >> "$SYSCTL_CONF"
+echo "net.ipv4.tcp_congestion_control=bbr" >> "$SYSCTL_CONF"
+echo "net.core.rmem_max=1048576" >> "$SYSCTL_CONF"
