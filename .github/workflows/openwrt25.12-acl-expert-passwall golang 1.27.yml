@@ -513,6 +513,11 @@ jobs:
           }
         echo "Xray Go 版本依赖检查通过"
 
+        # ===== 新增：单独诊断 Lucky 下载 =====
+        echo "========== Lucky download debug =========="
+        make package/lucky/download V=s 2>&1 | tee lucky-download.log
+        echo "========== Lucky download debug finished =========="
+
         echo "检查目标 LuCI 插件是否仍然被选中："
         for p in luci-app-timewol luci-app-autoreboot luci-app-zerotier; do
           if grep -q "^CONFIG_PACKAGE_${p}=y" .config; then
