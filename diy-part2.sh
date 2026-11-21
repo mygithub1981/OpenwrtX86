@@ -34,4 +34,4 @@ sed -i '/^net\.core\.rmem_max=/d' "$SYSCTL_CONF"
 # 写入经过当前固件验证的配置
 echo "net.core.default_qdisc=fq_codel" >> "$SYSCTL_CONF"
 echo "net.ipv4.tcp_congestion_control=bbr" >> "$SYSCTL_CONF"
-echo "net.core.rmem_max=1048576" >> "$SYSCTL_CONF"
+echo "net.core.rmem_max=4194304" >> "$SYSCTL_CONF"
