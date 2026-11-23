@@ -35,3 +35,13 @@ sed -i '/^net\.core\.rmem_max=/d' "$SYSCTL_CONF"
 echo "net.core.default_qdisc=fq_codel" >> "$SYSCTL_CONF"
 echo "net.ipv4.tcp_congestion_control=bbr" >> "$SYSCTL_CONF"
 echo "net.core.rmem_max=4194304" >> "$SYSCTL_CONF"
+
+# 编译前检查最终写入的 sysctl 配置
+ echo "===== 检查最终 sysctl.conf ====="
+grep -nE 'rmem_max|tcp_congestion_control|default_qdisc' "$SYSCTL_CONF"
+
+# 确保 nlbwmon 所需的接收缓冲区上限确实写入固件
+if ! grep -qx 'net.core.rmem_max=4194304' "$SYSCTL_CONF"; then
+    echo "ERROR: net.core.rmem_max is not set to 4194304 in $SYSCTL_CONF" >&2
+    exit 1
+fi
